@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Verify, package, and publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          coverage: none
+          tools: composer:v2
+
+      - name: Check tag matches plugin version
+        id: version
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          if [[ ! "${tag}" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+            echo "Tag must be exactly vMAJOR.MINOR.PATCH (got ${tag})." >&2
+            exit 1
+          fi
+          version="${BASH_REMATCH[1]}"
+          header="$(grep -E '^[[:space:]]*\*[[:space:]]*Version:' municipal-phonebook.php | head -n 1 | sed -E 's/.*Version:[[:space:]]*//' | tr -d '[:space:]')"
+          stable="$(grep -E '^Stable tag:' readme.txt | head -n 1 | sed -E 's/^Stable tag:[[:space:]]*//' | tr -d '[:space:]')"
+          constant="$(grep -E "define[[:space:]]*\([[:space:]]*'MUNIPB_VERSION'" municipal-phonebook.php | head -n 1 | sed -E "s/.*'([0-9]+\.[0-9]+\.[0-9]+)'.*/\1/")"
+          echo "tag=${version} header=${header} stable=${stable} constant=${constant}"
+          if [[ "${version}" != "${header}" || "${version}" != "${stable}" || "${version}" != "${constant}" ]]; then
+            echo "Tag ${tag} does not match the plugin header, MUNIPB_VERSION, and readme Stable tag." >&2
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: PHP syntax check
+        shell: bash
+        run: |
+          set -euo pipefail
+          status=0
+          while IFS= read -r -d '' file; do
+            php -l "${file}" || status=1
+          done < <(find . -name '*.php' -not -path './vendor/*' -not -path './build/*' -print0)
+          exit "${status}"
+
+      - name: Install coding standards
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: PHPCS
+        run: composer phpcs
+
+      - name: Build release notes from the changelog
+        run: php .github/scripts/release-notes.php "${{ steps.version.outputs.version }}" > release-notes.md
+
+      - name: Build municipal-phonebook.zip
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf build
+          mkdir -p build/municipal-phonebook
+          rsync -a \
+            --exclude '.git/' \
+            --exclude '.github/' \
+            --exclude 'vendor/' \
+            --exclude 'build/' \
+            --exclude 'tests/' \
+            --exclude 'node_modules/' \
+            --exclude 'composer.json' \
+            --exclude 'composer.lock' \
+            --exclude 'phpcs.xml' \
+            --exclude 'phpcs.xml.dist' \
+            --exclude 'README.md' \
+            --exclude 'release-notes.md' \
+            --exclude '.gitignore' \
+            --exclude '.gitattributes' \
+            --exclude '.editorconfig' \
+            ./ build/municipal-phonebook/
+          (
+            cd build
+            zip -r -X municipal-phonebook.zip municipal-phonebook
+          )
+          unzip -l build/municipal-phonebook.zip > build/zip-list.txt
+          if grep -E '(^|/)(\.github/|vendor/|composer\.(json|lock)|phpcs\.xml|README\.md|tests/)' build/zip-list.txt; then
+            echo "Zip contains development files." >&2
+            exit 1
+          fi
+          if ! grep -q 'municipal-phonebook/municipal-phonebook.php' build/zip-list.txt; then
+            echo "Zip does not unpack to municipal-phonebook/municipal-phonebook.php." >&2
+            exit 1
+          fi
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "v${{ steps.version.outputs.version }}"
+          body_path: release-notes.md
+          files: build/municipal-phonebook.zip
+          fail_on_unmatched_files: true
+          draft: false
+          prerelease: false

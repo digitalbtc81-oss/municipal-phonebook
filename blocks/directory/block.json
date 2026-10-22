@@ -1,0 +1,51 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "municipal-phonebook/directory",
+	"version": "1.2.0",
+	"title": "Municipal Phonebook",
+	"category": "widgets",
+	"icon": "phone",
+	"description": "Searchable telephone directory grouped by department.",
+	"keywords": [
+		"phonebook",
+		"directory",
+		"τηλεφωνικός κατάλογος"
+	],
+	"textdomain": "municipal-phonebook",
+	"attributes": {
+		"showSearch": {
+			"type": "boolean",
+			"default": true
+		},
+		"showToc": {
+			"type": "boolean",
+			"default": true
+		},
+		"departments": {
+			"type": "string",
+			"default": ""
+		},
+		"breakpoint": {
+			"type": "string",
+			"default": "720",
+			"enum": [
+				"never",
+				"480",
+				"720",
+				"960",
+				"always"
+			]
+		}
+	},
+	"supports": {
+		"html": false,
+		"align": [
+			"wide",
+			"full"
+		]
+	},
+	"editorScript": "munipb-block-editor",
+	"style": "munipb-frontend",
+	"viewScript": "munipb-frontend"
+}

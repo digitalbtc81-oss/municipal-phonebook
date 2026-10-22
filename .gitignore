@@ -1,0 +1,10 @@
+/vendor/
+/build/
+/release-notes.md
+.phpcs.cache
+.phpunit.result.cache
+*.log
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
