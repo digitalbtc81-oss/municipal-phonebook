@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Municipal Phonebook 1.5.1\n"
+"Project-Id-Version: Municipal Phonebook 1.5.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/municipal-"
 "phonebook\n"
-"POT-Creation-Date: 2026-10-23T11:16:33+00:00\n"
+"POT-Creation-Date: 2026-10-23T13:47:29+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -61,7 +61,7 @@ msgstr ""
 
 #: includes/class-munipb-admin.php:97 includes/class-munipb-admin.php:314
 #: includes/class-munipb-columns-admin.php:202
-#: includes/class-munipb-frontend.php:653 includes/columns.php:541
+#: includes/class-munipb-frontend.php:723 includes/columns.php:541
 msgid "Email"
 msgstr "Email"
 
@@ -120,7 +120,7 @@ msgstr "Ιδιότητα"
 
 #: includes/class-munipb-admin.php:313
 #: includes/class-munipb-columns-admin.php:200
-#: includes/class-munipb-frontend.php:652 includes/columns.php:539
+#: includes/class-munipb-frontend.php:722 includes/columns.php:539
 msgid "Phone"
 msgstr "Τηλέφωνο"
 
@@ -132,7 +132,7 @@ msgstr "Όλες οι υπηρεσίες"
 msgid "Phonebook settings"
 msgstr "Ρυθμίσεις καταλόγου"
 
-#: includes/class-munipb-admin.php:379 includes/class-munipb-admin.php:536
+#: includes/class-munipb-admin.php:379 includes/class-munipb-admin.php:537
 #: assets/js/block.js:29
 msgid "Settings"
 msgstr "Ρυθμίσεις"
@@ -179,7 +179,7 @@ msgstr ""
 "πρόσθετο."
 
 #: includes/class-munipb-admin.php:496
-#: includes/class-munipb-elementor-widget.php:330 assets/js/block.js:71
+#: includes/class-munipb-elementor-widget.php:346 assets/js/block.js:91
 msgid "Odd row color"
 msgstr "Χρώμα μονών γραμμών"
 
@@ -189,7 +189,7 @@ msgid ""
 msgstr "Φόντο της 1ης, 3ης, 5ης… ορατής γραμμής επαφής σε κάθε υπηρεσία."
 
 #: includes/class-munipb-admin.php:503
-#: includes/class-munipb-elementor-widget.php:331 assets/js/block.js:78
+#: includes/class-munipb-elementor-widget.php:347 assets/js/block.js:98
 msgid "Even row color"
 msgstr "Χρώμα ζυγών γραμμών"
 
@@ -197,11 +197,13 @@ msgstr "Χρώμα ζυγών γραμμών"
 msgid ""
 "Background of the 2nd, 4th, 6th… visible contact row. Stripes start again "
 "after each sub-department row."
-msgstr "Το φόντο της 2ης, 4ης, 6ης… ορατής γραμμής. Οι λωρίδες ξεκινούν ξανά μετά από κάθε γραμμή υποδιεύθυνσης."
+msgstr ""
+"Το φόντο της 2ης, 4ης, 6ης… ορατής γραμμής. Οι λωρίδες ξεκινούν ξανά μετά "
+"από κάθε γραμμή υποδιεύθυνσης."
 
 #: includes/class-munipb-admin.php:511
-#: includes/class-munipb-elementor-widget.php:460
-#: includes/class-munipb-elementor-widget.php:467
+#: includes/class-munipb-elementor-widget.php:476
+#: includes/class-munipb-elementor-widget.php:483
 msgid "Custom CSS"
 msgstr "Προσαρμοσμένο CSS"
 
@@ -230,6 +232,10 @@ msgstr ""
 "HTML blocks):"
 
 #: includes/class-munipb-admin.php:522
+msgid "breakpoint also accepts a width in pixels (0–2400). 0 keeps the table."
+msgstr "Το breakpoint δέχεται και πλάτος σε pixel (0–2400). Το 0 κρατά τον πίνακα."
+
+#: includes/class-munipb-admin.php:523
 msgid ""
 "Elementor: add the \"Municipal Phonebook\" widget from the \"Municipal "
 "Phonebook\" category."
@@ -237,7 +243,7 @@ msgstr ""
 "Elementor: προσθέστε το widget «Τηλεφωνικός Κατάλογος Δήμου» από την ομώνυμη "
 "κατηγορία."
 
-#: includes/class-munipb-admin.php:523
+#: includes/class-munipb-admin.php:524
 msgid "Block editor: add the \"Municipal Phonebook\" block."
 msgstr "Επεξεργαστής block: προσθέστε το block «Τηλεφωνικός Κατάλογος Δήμου»."
 
@@ -273,7 +279,10 @@ msgid ""
 "A child department becomes a row across the parent table. Turn this off to "
 "keep the previous row, with that department's own phones and email. Each "
 "department can override this."
-msgstr "Μια υποδιεύθυνση γίνεται γραμμή σε όλο τον πίνακα της διεύθυνσης. Απενεργοποιήστε το για να μείνει η προηγούμενη γραμμή, με τα τηλέφωνα και το email της υποδιεύθυνσης. Κάθε διεύθυνση μπορεί να το αλλάξει."
+msgstr ""
+"Μια υποδιεύθυνση γίνεται γραμμή σε όλο τον πίνακα της διεύθυνσης. "
+"Απενεργοποιήστε το για να μείνει η προηγούμενη γραμμή, με τα τηλέφωνα και το "
+"email της υποδιεύθυνσης. Κάθε διεύθυνση μπορεί να το αλλάξει."
 
 #: includes/class-munipb-columns-admin.php:79
 msgid "Sub-header color"
@@ -283,13 +292,18 @@ msgstr "Χρώμα υποκεφαλίδας"
 msgid ""
 "Background of a child department row when child departments are shown inside "
 "the parent table."
-msgstr "Φόντο της γραμμής υποδιεύθυνσης όταν οι υποδιευθύνσεις εμφανίζονται μέσα στον πίνακα."
+msgstr ""
+"Φόντο της γραμμής υποδιεύθυνσης όταν οι υποδιευθύνσεις εμφανίζονται μέσα "
+"στον πίνακα."
 
 #: includes/class-munipb-columns-admin.php:88
 msgid ""
 "Drag to reorder. Built-in columns can be hidden. A custom column keeps its "
 "slug, which CSV import uses."
-msgstr "Σύρετε για αλλαγή σειράς. Οι βασικές στήλες μπορούν να κρυφτούν. Μια προσαρμοσμένη στήλη κρατά το αναγνωριστικό της, που χρησιμοποιεί η εισαγωγή CSV."
+msgstr ""
+"Σύρετε για αλλαγή σειράς. Οι βασικές στήλες μπορούν να κρυφτούν. Μια "
+"προσαρμοσμένη στήλη κρατά το αναγνωριστικό της, που χρησιμοποιεί η εισαγωγή "
+"CSV."
 
 #: includes/class-munipb-columns-admin.php:93
 msgid "Label"
@@ -379,7 +393,9 @@ msgstr "Επιλογή στηλών για αυτή τη διεύθυνση"
 msgid ""
 "Unchecked columns are hidden. A child department inherits this list unless "
 "it has its own."
-msgstr "Οι μη επιλεγμένες στήλες κρύβονται. Μια υποδιεύθυνση κληρονομεί αυτή τη λίστα, εκτός αν έχει δική της."
+msgstr ""
+"Οι μη επιλεγμένες στήλες κρύβονται. Μια υποδιεύθυνση κληρονομεί αυτή τη "
+"λίστα, εκτός αν έχει δική της."
 
 #: includes/class-munipb-columns-admin.php:346
 msgid "Custom columns"
@@ -416,7 +432,12 @@ msgid ""
 "with a sub-department but no name sets that sub-department's own phones/"
 "email. Missing departments are created. Extra columns use the column slug. A "
 "file column is an attachment ID or a file URL."
-msgstr "Τηλέφωνα: οι ομάδες χωρίζονται με «;» και οι αριθμοί μιας ομάδας με «|». Μια γραμμή με υποδιεύθυνση και κενό όνομα ορίζει τα τηλέφωνα/email της υποδιεύθυνσης. Οι διευθύνσεις που λείπουν δημιουργούνται. Οι επιπλέον στήλες χρησιμοποιούν το αναγνωριστικό της στήλης. Μια στήλη αρχείου είναι αναγνωριστικό συνημμένου ή URL του αρχείου."
+msgstr ""
+"Τηλέφωνα: οι ομάδες χωρίζονται με «;» και οι αριθμοί μιας ομάδας με «|». Μια "
+"γραμμή με υποδιεύθυνση και κενό όνομα ορίζει τα τηλέφωνα/email της "
+"υποδιεύθυνσης. Οι διευθύνσεις που λείπουν δημιουργούνται. Οι επιπλέον στήλες "
+"χρησιμοποιούν το αναγνωριστικό της στήλης. Μια στήλη αρχείου είναι "
+"αναγνωριστικό συνημμένου ή URL του αρχείου."
 
 #: includes/class-munipb-csv.php:87
 msgid "CSV file (max 2 MB)"
@@ -426,36 +447,36 @@ msgstr "Αρχείο CSV (έως 2 MB)"
 msgid "Delete all existing contacts before importing"
 msgstr "Διαγραφή όλων των υπαρχουσών επαφών πριν την εισαγωγή"
 
-#: includes/class-munipb-csv.php:160 includes/class-munipb-csv.php:254
+#: includes/class-munipb-csv.php:160 includes/class-munipb-csv.php:255
 msgid "You do not have permission to do this."
 msgstr "Δεν έχετε δικαίωμα για αυτή την ενέργεια."
 
-#: includes/class-munipb-csv.php:260
+#: includes/class-munipb-csv.php:261
 msgid "No file uploaded."
 msgstr "Δεν ανέβηκε αρχείο."
 
-#: includes/class-munipb-csv.php:266
+#: includes/class-munipb-csv.php:267
 msgid "Upload failed."
 msgstr "Η μεταφόρτωση απέτυχε."
 
-#: includes/class-munipb-csv.php:269
+#: includes/class-munipb-csv.php:270
 msgid "File is too large."
 msgstr "Το αρχείο είναι πολύ μεγάλο."
 
-#: includes/class-munipb-csv.php:273
+#: includes/class-munipb-csv.php:274
 msgid "Please upload a .csv file."
 msgstr "Ανεβάστε ένα αρχείο .csv."
 
-#: includes/class-munipb-csv.php:278
+#: includes/class-munipb-csv.php:279
 msgid "Could not read the file."
 msgstr "Δεν ήταν δυνατή η ανάγνωση του αρχείου."
 
-#: includes/class-munipb-csv.php:294
+#: includes/class-munipb-csv.php:295
 msgid "Invalid header row. Required columns: department, name."
 msgstr "Μη έγκυρη κεφαλίδα. Απαιτούμενες στήλες: department, name."
 
 #. translators: 1: imported rows, 2: skipped rows.
-#: includes/class-munipb-csv.php:413
+#: includes/class-munipb-csv.php:414
 #, php-format
 msgid "Import finished: %1$d contacts imported, %2$d rows skipped."
 msgstr ""
@@ -501,155 +522,168 @@ msgstr "Ποτέ"
 msgid "Always cards"
 msgstr "Πάντα κάρτες"
 
-#: includes/class-munipb-elementor-widget.php:196
+#: includes/class-munipb-elementor-widget.php:162 assets/js/block.js:53
+msgid "Custom"
+msgstr "Προσαρμογή"
+
+#: includes/class-munipb-elementor-widget.php:169 assets/js/block.js:60
+msgid "Custom width (px)"
+msgstr "Προσαρμοσμένο πλάτος (px)"
+
+#: includes/class-munipb-elementor-widget.php:170 assets/js/block.js:61
+msgid ""
+"0 keeps the table. Cards appear when the directory is this wide or narrower."
+msgstr "Το 0 κρατά τον πίνακα. Οι κάρτες εμφανίζονται όταν ο κατάλογος έχει αυτό το πλάτος ή μικρότερο."
+
+#: includes/class-munipb-elementor-widget.php:212
 msgid "Colors"
 msgstr "Χρώματα"
 
-#: includes/class-munipb-elementor-widget.php:201
+#: includes/class-munipb-elementor-widget.php:217
 msgid "Primary"
 msgstr "Κύριο"
 
-#: includes/class-munipb-elementor-widget.php:202
+#: includes/class-munipb-elementor-widget.php:218
 msgid "Primary dark"
 msgstr "Κύριο σκούρο"
 
-#: includes/class-munipb-elementor-widget.php:203
+#: includes/class-munipb-elementor-widget.php:219
 msgid "Accent"
 msgstr "Έμφαση"
 
-#: includes/class-munipb-elementor-widget.php:204
+#: includes/class-munipb-elementor-widget.php:220
 msgid "Borders"
 msgstr "Περιγράμματα"
 
-#: includes/class-munipb-elementor-widget.php:205
+#: includes/class-munipb-elementor-widget.php:221
 msgid "Soft background"
 msgstr "Απαλό φόντο"
 
-#: includes/class-munipb-elementor-widget.php:206
+#: includes/class-munipb-elementor-widget.php:222
 msgid "Sub-department background"
 msgstr "Φόντο τμήματος"
 
-#: includes/class-munipb-elementor-widget.php:207
+#: includes/class-munipb-elementor-widget.php:223
 msgid "Highlight"
 msgstr "Επισήμανση"
 
-#: includes/class-munipb-elementor-widget.php:208
+#: includes/class-munipb-elementor-widget.php:224
 msgid "Toolbar"
 msgstr "Γραμμή εργαλείων"
 
-#: includes/class-munipb-elementor-widget.php:216
+#: includes/class-munipb-elementor-widget.php:232
 msgid "Corner radius"
 msgstr "Στρογγύλεμα γωνιών"
 
-#: includes/class-munipb-elementor-widget.php:240
+#: includes/class-munipb-elementor-widget.php:256
 msgid "Department headings"
 msgstr "Τίτλοι υπηρεσιών"
 
-#: includes/class-munipb-elementor-widget.php:251
-#: includes/class-munipb-elementor-widget.php:412
+#: includes/class-munipb-elementor-widget.php:267
+#: includes/class-munipb-elementor-widget.php:428
 msgid "Text color"
 msgstr "Χρώμα κειμένου"
 
-#: includes/class-munipb-elementor-widget.php:252
-#: includes/class-munipb-elementor-widget.php:414
+#: includes/class-munipb-elementor-widget.php:268
+#: includes/class-munipb-elementor-widget.php:430
 msgid "Background"
 msgstr "Φόντο"
 
-#: includes/class-munipb-elementor-widget.php:256
+#: includes/class-munipb-elementor-widget.php:272
 msgid "Padding"
 msgstr "Εσωτερικό περιθώριο"
 
-#: includes/class-munipb-elementor-widget.php:265
+#: includes/class-munipb-elementor-widget.php:281
 msgid "Space between departments"
 msgstr "Απόσταση μεταξύ υπηρεσιών"
 
-#: includes/class-munipb-elementor-widget.php:289
+#: includes/class-munipb-elementor-widget.php:305
 msgid "Table & cards"
 msgstr "Πίνακας & κάρτες"
 
-#: includes/class-munipb-elementor-widget.php:297
+#: includes/class-munipb-elementor-widget.php:313
 msgid "Column headers"
 msgstr "Επικεφαλίδες στηλών"
 
-#: includes/class-munipb-elementor-widget.php:301
+#: includes/class-munipb-elementor-widget.php:317
 msgid "Column header color"
 msgstr "Χρώμα επικεφαλίδων"
 
-#: includes/class-munipb-elementor-widget.php:302
+#: includes/class-munipb-elementor-widget.php:318
 msgid "Column header background"
 msgstr "Φόντο επικεφαλίδων"
 
-#: includes/class-munipb-elementor-widget.php:307
+#: includes/class-munipb-elementor-widget.php:323
 msgid "Rows"
 msgstr "Γραμμές"
 
-#: includes/class-munipb-elementor-widget.php:311
+#: includes/class-munipb-elementor-widget.php:327
 msgid "Row text color"
 msgstr "Χρώμα κειμένου γραμμών"
 
-#: includes/class-munipb-elementor-widget.php:315
+#: includes/class-munipb-elementor-widget.php:331
 msgid "Row / card background"
 msgstr "Φόντο γραμμής / κάρτας"
 
-#: includes/class-munipb-elementor-widget.php:332
+#: includes/class-munipb-elementor-widget.php:348
 msgid "Sub-department text color"
 msgstr "Χρώμα κειμένου τμήματος"
 
-#: includes/class-munipb-elementor-widget.php:333
+#: includes/class-munipb-elementor-widget.php:349
 msgid "Sub-header row"
 msgstr "Γραμμή υποκεφαλίδας"
 
-#: includes/class-munipb-elementor-widget.php:337
+#: includes/class-munipb-elementor-widget.php:353
 msgid "Row spacing (cell padding)"
 msgstr "Απόσταση γραμμών (padding κελιών)"
 
-#: includes/class-munipb-elementor-widget.php:347
+#: includes/class-munipb-elementor-widget.php:363
 msgid "Table border"
 msgstr "Περίγραμμα πίνακα"
 
-#: includes/class-munipb-elementor-widget.php:351
+#: includes/class-munipb-elementor-widget.php:367
 msgid "Row divider color"
 msgstr "Χρώμα διαχωριστικού γραμμών"
 
-#: includes/class-munipb-elementor-widget.php:364
+#: includes/class-munipb-elementor-widget.php:380
 msgid "Links"
 msgstr "Σύνδεσμοι"
 
-#: includes/class-munipb-elementor-widget.php:375
+#: includes/class-munipb-elementor-widget.php:391
 msgid "Color"
 msgstr "Χρώμα"
 
-#: includes/class-munipb-elementor-widget.php:376
+#: includes/class-munipb-elementor-widget.php:392
 msgid "Hover color"
 msgstr "Χρώμα hover"
 
-#: includes/class-munipb-elementor-widget.php:389
-#: includes/class-munipb-frontend.php:439
-#: includes/class-munipb-frontend.php:448
+#: includes/class-munipb-elementor-widget.php:405
+#: includes/class-munipb-frontend.php:509
+#: includes/class-munipb-frontend.php:518
 msgid "Search"
 msgstr "Αναζήτηση"
 
-#: includes/class-munipb-elementor-widget.php:415
+#: includes/class-munipb-elementor-widget.php:431
 msgid "Border color"
 msgstr "Χρώμα περιγράμματος"
 
-#: includes/class-munipb-elementor-widget.php:416
+#: includes/class-munipb-elementor-widget.php:432
 msgid "Focus border color"
 msgstr "Χρώμα περιγράμματος (focus)"
 
-#: includes/class-munipb-elementor-widget.php:417
+#: includes/class-munipb-elementor-widget.php:433
 msgid "Icon color"
 msgstr "Χρώμα εικονιδίου"
 
-#: includes/class-munipb-elementor-widget.php:421
+#: includes/class-munipb-elementor-widget.php:437
 msgid "Border radius"
 msgstr "Στρογγύλεμα"
 
-#: includes/class-munipb-elementor-widget.php:436
+#: includes/class-munipb-elementor-widget.php:452
 msgid "Max width"
 msgstr "Μέγιστο πλάτος"
 
-#: includes/class-munipb-elementor-widget.php:468
+#: includes/class-munipb-elementor-widget.php:484
 msgid ""
 "Use the selector keyword for this widget's directory. Example: selector ."
 "munipb-section-title { color: #c36; }"
@@ -657,80 +691,80 @@ msgstr ""
 "Χρησιμοποιήστε τη λέξη selector για τον κατάλογο αυτού του widget. "
 "Παράδειγμα: selector .munipb-section-title { color: #c36; }"
 
-#: includes/class-munipb-frontend.php:91 includes/class-munipb-frontend.php:471
+#: includes/class-munipb-frontend.php:92 includes/class-munipb-frontend.php:541
 msgid "No results found"
 msgstr "Δεν βρέθηκαν αποτελέσματα"
 
-#: includes/class-munipb-frontend.php:92
+#: includes/class-munipb-frontend.php:93
 msgid "1 result. Use the arrow keys to navigate."
 msgstr "1 αποτέλεσμα. Χρησιμοποιήστε τα βέλη για πλοήγηση."
 
 #. translators: %d: number of results.
-#: includes/class-munipb-frontend.php:94
+#: includes/class-munipb-frontend.php:95
 #, php-format
 msgid "%d results. Use the arrow keys to navigate."
 msgstr "%d αποτελέσματα. Χρησιμοποιήστε τα βέλη για πλοήγηση."
 
-#: includes/class-munipb-frontend.php:95
+#: includes/class-munipb-frontend.php:96
 #: includes/class-munipb-post-types.php:92
 msgid "Department"
 msgstr "Υπηρεσία"
 
 #. translators: %d: number of selected departments.
-#: includes/class-munipb-frontend.php:97
+#: includes/class-munipb-frontend.php:98
 #, php-format
 msgid "%d selected"
 msgstr "%d επιλεγμένες"
 
-#: includes/class-munipb-frontend.php:405
+#: includes/class-munipb-frontend.php:475
 msgid "Phonebook tools"
 msgstr "Εργαλεία καταλόγου"
 
-#: includes/class-munipb-frontend.php:409
+#: includes/class-munipb-frontend.php:479
 msgid "Categories"
 msgstr "Κατηγορίες"
 
-#: includes/class-munipb-frontend.php:417
+#: includes/class-munipb-frontend.php:487
 msgid "Filter by department"
 msgstr "Φιλτράρισμα ανά υπηρεσία"
 
-#: includes/class-munipb-frontend.php:432
+#: includes/class-munipb-frontend.php:502
 msgid "Search the phonebook"
 msgstr "Αναζήτηση στον τηλεφωνικό κατάλογο"
 
-#: includes/class-munipb-frontend.php:436
+#: includes/class-munipb-frontend.php:506
 msgid "Search name, role, department, phone…"
 msgstr "Αναζήτηση στον κατάλογο (όνομα, ιδιότητα, υπηρεσία, τηλέφωνο)…"
 
-#: includes/class-munipb-frontend.php:438
+#: includes/class-munipb-frontend.php:508
 msgid "Clear search"
 msgstr "Καθαρισμός αναζήτησης"
 
-#: includes/class-munipb-frontend.php:441
+#: includes/class-munipb-frontend.php:511
 msgid "Search results"
 msgstr "Αποτελέσματα αναζήτησης"
 
-#: includes/class-munipb-frontend.php:453
+#: includes/class-munipb-frontend.php:523
 msgid "Clear"
 msgstr "Εκκαθάριση"
 
 #. translators: %s: search terms.
-#: includes/class-munipb-frontend.php:464
+#: includes/class-munipb-frontend.php:534
 #, php-format
 msgid "Showing results for: %s"
 msgstr "Αποτελέσματα για: %s"
 
-#: includes/class-munipb-frontend.php:466
+#: includes/class-munipb-frontend.php:536
 msgid "Show all"
 msgstr "Εμφάνιση όλων"
 
-#: includes/class-munipb-frontend.php:575
+#: includes/class-munipb-frontend.php:645
 #: includes/class-munipb-post-types.php:65
 msgid "No contacts found."
 msgstr "Δεν βρέθηκαν επαφές."
 
-#. translators: 1: link text, 2: contact name.
-#: includes/class-munipb-frontend.php:785
+#. translators: 1: column label, 2: contact name.
+#: includes/class-munipb-frontend.php:855
 #, php-format
 msgid "Download %1$s for %2$s"
 msgstr "Λήψη %1$s για %2$s"
@@ -883,11 +917,11 @@ msgstr ""
 msgid "The custom CSS is not valid. The previous CSS was kept."
 msgstr "Το προσαρμοσμένο CSS δεν είναι έγκυρο. Διατηρήθηκε το προηγούμενο CSS."
 
-#: assets/js/block.js:59
+#: assets/js/block.js:79
 msgid "Only these departments (slugs, comma separated)"
 msgstr "Μόνο αυτές οι υπηρεσίες (slugs, χωρισμένα με κόμμα)"
 
-#: assets/js/block.js:67
+#: assets/js/block.js:87
 msgid "Row colors"
 msgstr "Χρώματα γραμμών"
 

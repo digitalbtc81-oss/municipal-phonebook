@@ -43,18 +43,38 @@
 						} ),
 						el( SelectControl, {
 							label: __( 'Switch to cards below', 'municipal-phonebook' ),
-							value: a.breakpoint,
+							value: [ 'never', '480', '720', '960', 'always' ].indexOf( a.breakpoint ) === -1 ? 'custom' : a.breakpoint,
 							options: [
 								{ label: __( 'Never', 'municipal-phonebook' ), value: 'never' },
 								{ label: '480px', value: '480' },
 								{ label: '720px', value: '720' },
 								{ label: '960px', value: '960' },
-								{ label: __( 'Always cards', 'municipal-phonebook' ), value: 'always' }
+								{ label: __( 'Always cards', 'municipal-phonebook' ), value: 'always' },
+								{ label: __( 'Custom', 'municipal-phonebook' ), value: 'custom' }
 							],
 							onChange: function ( v ) {
-								props.setAttributes( { breakpoint: v } );
+								props.setAttributes( { breakpoint: v === 'custom' ? '1100' : v } );
 							}
 						} ),
+						[ 'never', '480', '720', '960', 'always' ].indexOf( a.breakpoint ) === -1 ? el( wp.components.NumberControl || wp.components.TextControl, {
+							label: __( 'Custom width (px)', 'municipal-phonebook' ),
+							help: __( '0 keeps the table. Cards appear when the directory is this wide or narrower.', 'municipal-phonebook' ),
+							value: a.breakpoint,
+							min: 0,
+							max: 2400,
+							step: 1,
+							type: 'number',
+							onChange: function ( v ) {
+								var n = parseInt( v, 10 );
+								if ( isNaN( n ) || n < 0 ) {
+									n = 0;
+								}
+								if ( n > 2400 ) {
+									n = 2400;
+								}
+								props.setAttributes( { breakpoint: String( n ) } );
+							}
+						} ) : null,
 						el( TextControl, {
 							label: __( 'Only these departments (slugs, comma separated)', 'municipal-phonebook' ),
 							value: a.departments,
