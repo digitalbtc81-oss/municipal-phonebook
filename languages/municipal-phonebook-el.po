@@ -1,9 +1,9 @@
 msgid ""
 msgstr ""
-"Project-Id-Version: Municipal Phonebook 1.4.1\n"
+"Project-Id-Version: Municipal Phonebook 1.4.2\n"
 "Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/municipal-"
 "phonebook\n"
-"POT-Creation-Date: 2026-10-23T10:31:14+00:00\n"
+"POT-Creation-Date: 2026-10-23T10:50:27+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -132,6 +132,7 @@ msgid "Settings"
 msgstr "Ρυθμίσεις"
 
 #: includes/class-munipb-admin.php:456 includes/class-munipb-csv.php:57
+#: includes/class-munipb-updater.php:104
 msgid "You do not have permission to access this page."
 msgstr "Δεν έχετε δικαίωμα πρόσβασης σε αυτή τη σελίδα."
 
@@ -643,16 +644,34 @@ msgstr "Αυτό το endpoint είναι απενεργοποιημένο."
 msgid "Too many requests. Please try again later."
 msgstr "Πάρα πολλά αιτήματα. Δοκιμάστε ξανά αργότερα."
 
-#: includes/class-munipb-updater.php:144
+#: includes/class-munipb-updater.php:93
+msgid "Check for updates"
+msgstr "Έλεγχος για ενημερώσεις"
+
+#. translators: %s: version number, such as 1.4.2.
+#: includes/class-munipb-updater.php:171
+#, php-format
+msgid "Version %s is available."
+msgstr "Διατίθεται η έκδοση %s."
+
+#: includes/class-munipb-updater.php:176
+msgid "You are up to date."
+msgstr "Είστε ενημερωμένοι."
+
+#: includes/class-munipb-updater.php:179
+msgid "Could not check for updates. Please try again later."
+msgstr "Δεν ήταν δυνατός ο έλεγχος για ενημερώσεις. Δοκιμάστε ξανά αργότερα."
+
+#: includes/class-munipb-updater.php:277
 msgid "View the release on GitHub."
 msgstr "Δείτε την έκδοση στο GitHub."
 
-#: includes/class-munipb-updater.php:186 includes/class-munipb-updater.php:199
-#: includes/class-munipb-updater.php:209
+#: includes/class-munipb-updater.php:319 includes/class-munipb-updater.php:332
+#: includes/class-munipb-updater.php:342
 msgid "The update package does not contain Municipal Phonebook."
 msgstr "Το πακέτο ενημέρωσης δεν περιέχει το Municipal Phonebook."
 
-#: includes/class-munipb-updater.php:221
+#: includes/class-munipb-updater.php:354
 msgid ""
 "The update package could not be installed into the municipal-phonebook "
 "folder."
