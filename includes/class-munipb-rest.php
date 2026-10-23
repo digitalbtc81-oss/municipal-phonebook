@@ -98,20 +98,22 @@ class Munipb_REST {
 		$tree  = munipb_get_directory( $dept ? array( $dept ) : array() );
 		$out   = array();
 
-		$push = static function ( $entry, $department, $sub ) use ( &$out, $words ) {
+		$push = static function ( $entry, $department, $sub, $columns ) use ( &$out, $words ) {
+			$columns = is_array( $columns ) ? $columns : array();
+			$custom  = ( isset( $entry['custom'] ) && is_array( $entry['custom'] ) ) ? $entry['custom'] : array();
 			if ( $words ) {
 				$phones = array();
 				foreach ( $entry['phones'] as $g ) {
 					$phones = array_merge( $phones, $g );
 				}
-				$hay = munipb_normalize_text( implode( ' ', array( $entry['name'], $entry['role'], $entry['email'], $department, $sub, implode( ' ', $phones ) ) ) );
+				$hay = munipb_normalize_text( implode( ' ', array( $entry['name'], $entry['role'], $entry['email'], $department, $sub, implode( ' ', $phones ), munipb_custom_search_text( $custom, $columns ) ) ) );
 				foreach ( $words as $w ) {
 					if ( false === strpos( $hay, $w ) ) {
 						return;
 					}
 				}
 			}
-			$out[] = array(
+			$row    = array(
 				'name'          => $entry['name'],
 				'role'          => $entry['role'],
 				'phones'        => $entry['phones'],
@@ -119,15 +121,22 @@ class Munipb_REST {
 				'department'    => $department,
 				'subdepartment' => $sub,
 			);
+			$public = munipb_public_column_values( $entry, $columns );
+			if ( $public ) {
+				$row['columns'] = $public;
+			}
+			$out[] = $row;
 		};
 
 		foreach ( $tree as $section ) {
+			$section_columns = isset( $section['columns'] ) ? $section['columns'] : array();
 			foreach ( $section['entries'] as $e ) {
-				$push( $e, $section['name'], '' );
+				$push( $e, $section['name'], '', $section_columns );
 			}
 			foreach ( $section['children'] as $child ) {
+				$child_columns = isset( $child['columns'] ) ? $child['columns'] : $section_columns;
 				foreach ( $child['entries'] as $e ) {
-					$push( $e, $section['name'], $child['name'] );
+					$push( $e, $section['name'], $child['name'], $child_columns );
 				}
 			}
 		}

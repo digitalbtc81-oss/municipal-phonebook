@@ -19,6 +19,9 @@ function munipb_default_settings() {
 		'delete_on_remove' => 0,
 		'row_odd'          => '#ffffff',
 		'row_even'         => '#f3f6fc',
+		'sub_header'       => '#d3dceb',
+		'inline_children'  => 1,
+		'columns'          => array(),
 		'custom_css'       => '',
 	);
 }
@@ -358,6 +361,24 @@ function munipb_sanitize_settings( $input ) {
 		$color       = munipb_sanitize_hex( $input[ $key ] );
 		$out[ $key ] = '' !== $color ? $color : $defaults[ $key ];
 	}
+	if ( ! array_key_exists( 'sub_header', $input ) ) {
+		$kept              = munipb_sanitize_hex( isset( $existing['sub_header'] ) ? $existing['sub_header'] : '' );
+		$out['sub_header'] = '' !== $kept ? $kept : $defaults['sub_header'];
+	} else {
+		$color             = munipb_sanitize_hex( $input['sub_header'] );
+		$out['sub_header'] = '' !== $color ? $color : $defaults['sub_header'];
+	}
+	if ( ! array_key_exists( 'inline_children', $input ) ) {
+		$out['inline_children'] = array_key_exists( 'inline_children', $existing ) ? ( empty( $existing['inline_children'] ) ? 0 : 1 ) : 1;
+	} else {
+		$out['inline_children'] = empty( $input['inline_children'] ) ? 0 : 1;
+	}
+	if ( ! array_key_exists( 'columns', $input ) ) {
+		$kept           = ( isset( $existing['columns'] ) && is_array( $existing['columns'] ) ) ? $existing['columns'] : array();
+		$out['columns'] = $kept ? munipb_sanitize_columns( $kept ) : array();
+	} else {
+		$out['columns'] = munipb_sanitize_columns( $input['columns'] );
+	}
 	if ( ! array_key_exists( 'custom_css', $input ) ) {
 		$out['custom_css'] = munipb_prepare_custom_css( isset( $existing['custom_css'] ) ? $existing['custom_css'] : '' );
 	} else {
@@ -533,6 +554,7 @@ function munipb_get_entry_public_data( $post ) {
 		'role'   => (string) get_post_meta( $post->ID, '_munipb_role', true ),
 		'phones' => munipb_parse_phone_groups( get_post_meta( $post->ID, '_munipb_phones', true ) ),
 		'email'  => sanitize_email( (string) get_post_meta( $post->ID, '_munipb_email', true ) ),
+		'custom' => munipb_read_entry_custom( $post->ID ),
 	);
 }
 
@@ -632,6 +654,8 @@ function munipb_get_directory( $only_slugs = array() ) {
 					'id'       => (int) $term->term_id,
 					'slug'     => $term->slug,
 					'name'     => $term->name,
+					'inline'   => munipb_term_inline_children( $term->term_id ),
+					'columns'  => munipb_columns_for_term( $term->term_id ),
 					'entries'  => array_map( 'munipb_get_entry_public_data', munipb_get_entries_for_term( $term->term_id ) ),
 					'children' => array(),
 				);
@@ -772,8 +796,12 @@ function munipb_collect_children( $parent_id, &$out, $depth ) {
 			'depth'   => $depth,
 			'phones'  => munipb_parse_phone_groups( get_term_meta( $child->term_id, 'munipb_phones', true ) ),
 			'email'   => sanitize_email( (string) get_term_meta( $child->term_id, 'munipb_email', true ) ),
+			'inline'  => munipb_term_inline_children( $child->term_id ),
+			'columns' => munipb_columns_for_term( $child->term_id ),
 			'entries' => array_map( 'munipb_get_entry_public_data', munipb_get_entries_for_term( $child->term_id ) ),
 		);
 		munipb_collect_children( $child->term_id, $out, $depth + 1 );
 	}
 }
+
+require_once __DIR__ . '/columns.php';

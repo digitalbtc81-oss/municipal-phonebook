@@ -78,9 +78,10 @@ class Munipb_Frontend {
 		$defaults = munipb_default_settings();
 		$odd      = munipb_sanitize_hex( isset( $settings['row_odd'] ) ? $settings['row_odd'] : '' );
 		$even     = munipb_sanitize_hex( isset( $settings['row_even'] ) ? $settings['row_even'] : '' );
+		$sub      = munipb_sanitize_hex( isset( $settings['sub_header'] ) ? $settings['sub_header'] : '' );
 		wp_add_inline_style(
 			self::HANDLE,
-			'.munipb-directory{--munipb-row-odd:' . ( '' !== $odd ? $odd : $defaults['row_odd'] ) . ';--munipb-row-even:' . ( '' !== $even ? $even : $defaults['row_even'] ) . ';}'
+			'.munipb-directory{--munipb-row-odd:' . ( '' !== $odd ? $odd : $defaults['row_odd'] ) . ';--munipb-row-even:' . ( '' !== $even ? $even : $defaults['row_even'] ) . ';--munipb-sub-header:' . ( '' !== $sub ? $sub : $defaults['sub_header'] ) . ';}'
 		);
 		$config = array(
 			'minChars'   => 2,
@@ -319,12 +320,26 @@ class Munipb_Frontend {
 	 * @param array  $entry   Entry data.
 	 * @param array  $words   Normalized query words.
 	 * @param string $context Department names for context.
+	 * @param array  $columns Columns whose text is searchable.
 	 * @return bool
 	 */
-	private static function matches( $entry, $words, $context ) {
+	private static function matches( $entry, $words, $context, $columns = array() ) {
 		$phones = munipb_phones_text( isset( $entry['phones'] ) ? $entry['phones'] : array() );
-		$text   = implode( ' ', array( $entry['name'], isset( $entry['role'] ) ? $entry['role'] : '', $entry['email'], $context, $phones ) );
-		return munipb_words_match( $words, $text, preg_replace( '/\D/', '', $phones ) );
+		$custom = ( isset( $entry['custom'] ) && is_array( $entry['custom'] ) ) ? $entry['custom'] : array();
+		$extra  = munipb_custom_visible_text( $custom, $columns );
+		$text   = implode(
+			' ',
+			array(
+				isset( $entry['name'] ) ? $entry['name'] : '',
+				isset( $entry['role'] ) ? $entry['role'] : '',
+				isset( $entry['email'] ) ? $entry['email'] : '',
+				$context,
+				$phones,
+				$extra,
+			)
+		);
+		$digits = preg_replace( '/\D/', '', $phones . ' ' . munipb_custom_visible_text( $custom, $columns ) );
+		return munipb_words_match( $words, $text, (string) $digits );
 	}
 
 	/**
@@ -516,29 +531,44 @@ class Munipb_Frontend {
 	private static function render_all( $tree, $inst, $words ) {
 		$out = '';
 		foreach ( $tree as $section ) {
-			$rows = '';
+			$columns = self::table_columns( $section );
+			$inline  = ! empty( $section['inline'] );
+			$rows    = '';
+			$stripe  = 0;
 			foreach ( $section['entries'] as $entry ) {
-				if ( $words && ! self::matches( $entry, $words, $section['name'] ) ) {
+				if ( $words && ! self::matches( $entry, $words, $section['name'], $columns ) ) {
 					continue;
 				}
-				$rows .= self::render_entry_row( $entry, $inst, $section['id'] );
+				++$stripe;
+				$rows .= self::render_entry_row( $entry, $inst, $section['id'], $columns, isset( $section['columns'] ) ? $section['columns'] : $columns, $stripe );
 			}
 			foreach ( $section['children'] as $child ) {
-				$child_rows = '';
+				$child_rows  = '';
+				$child_index = 0;
+				$name_match  = $words ? self::matches( $child, $words, $section['name'], $columns ) : false;
 				foreach ( $child['entries'] as $entry ) {
-					if ( $words && ! self::matches( $entry, $words, $section['name'] . ' ' . $child['name'] ) ) {
+					$context = $section['name'] . ' ' . $child['name'];
+					$show    = ! $words || self::matches( $entry, $words, $context, $columns );
+					if ( ! $show && $inline && $name_match ) {
+						$show = true;
+					}
+					if ( ! $show ) {
 						continue;
 					}
-					$child_rows .= self::render_entry_row( $entry, $inst, $child['id'] );
+					++$child_index;
+					$own         = isset( $child['columns'] ) ? $child['columns'] : $columns;
+					$child_rows .= self::render_entry_row( $entry, $inst, $child['id'], $columns, $own, $child_index );
 				}
-				$child_matches = $words ? self::matches( $child, $words, $section['name'] ) : true;
-				if ( '' === $child_rows && ! $child_matches ) {
-					continue;
+				if ( '' === $child_rows ) {
+					$keep = ! $inline && ( ! $words || self::matches( $child, $words, $section['name'], $columns ) );
+					if ( ! $keep ) {
+						continue;
+					}
 				}
-				$rows .= self::render_subdept_row( $child, $inst ) . $child_rows;
+				$rows .= self::render_subdept_row( $child, $inst, $columns, $inline ) . $child_rows;
 			}
 			if ( '' !== $rows ) {
-				$out .= self::wrap_section( $section, $inst, $rows );
+				$out .= self::wrap_section( $section, $inst, $rows, $columns );
 			}
 		}
 		if ( '' === $out ) {
@@ -548,39 +578,86 @@ class Munipb_Frontend {
 	}
 
 	/**
+	 * Columns for one table: the department's columns, plus any column a child adds.
+	 *
+	 * @param array $section Section node.
+	 * @return array<int, array<string, mixed>>
+	 */
+	private static function table_columns( $section ) {
+		$lists = array( munipb_node_column_keys( $section ) );
+		if ( ! empty( $section['children'] ) && is_array( $section['children'] ) ) {
+			foreach ( $section['children'] as $child ) {
+				$lists[] = munipb_node_column_keys( $child );
+			}
+		}
+		return munipb_columns_by_keys( munipb_union_column_keys( $lists ), munipb_get_columns() );
+	}
+
+	/**
 	 * Wrap rows into a section with heading and table.
 	 *
-	 * @param array  $section   Section.
-	 * @param int    $inst      Instance.
-	 * @param string $rows      Escaped rows HTML.
+	 * @param array  $section Section.
+	 * @param int    $inst    Instance.
+	 * @param string $rows    Escaped rows HTML.
+	 * @param array  $columns Visible columns.
 	 * @return string
 	 */
-	private static function wrap_section( $section, $inst, $rows ) {
+	private static function wrap_section( $section, $inst, $rows, $columns ) {
 		$anchor     = self::anchor( $section, $inst );
 		$heading_id = $anchor . '-title';
 		$out        = '<section class="munipb-section" id="' . esc_attr( $anchor ) . '" data-munipb-section="' . esc_attr( (string) (int) $section['id'] ) . '" aria-labelledby="' . esc_attr( $heading_id ) . '">';
 		$out       .= '<h2 class="munipb-section-title" id="' . esc_attr( $heading_id ) . '">' . esc_html( $section['name'] ) . '</h2>';
 		$out       .= '<table class="munipb-table"><thead><tr>';
-		$out       .= '<th scope="col" class="munipb-col-name">' . esc_html__( 'Full name', 'municipal-phonebook' ) . '</th>';
-		$out       .= '<th scope="col" class="munipb-col-role">' . esc_html__( 'Role', 'municipal-phonebook' ) . '</th>';
-		$out       .= '<th scope="col" class="munipb-col-phone">' . esc_html__( 'Phone', 'municipal-phonebook' ) . '</th>';
-		$out       .= '<th scope="col" class="munipb-col-email">' . esc_html__( 'Email', 'municipal-phonebook' ) . '</th>';
-		$out       .= '</tr></thead><tbody>' . $rows . '</tbody></table></section>';
+		foreach ( $columns as $column ) {
+			$out .= '<th scope="col" class="' . esc_attr( self::column_class( $column ) ) . '">' . esc_html( munipb_column_label( $column ) ) . '</th>';
+		}
+		$out .= '</tr></thead><tbody>' . $rows . '</tbody></table></section>';
 		return $out;
+	}
+
+	/**
+	 * CSS class for a column. Built-in keys keep the historical class names.
+	 *
+	 * @param array $column Column definition.
+	 * @return string
+	 */
+	private static function column_class( $column ) {
+		$key = isset( $column['key'] ) ? (string) $column['key'] : '';
+		if ( munipb_column_is_builtin( $key ) ) {
+			return 'munipb-col-' . $key;
+		}
+		$type = isset( $column['type'] ) ? sanitize_html_class( (string) $column['type'] ) : 'text';
+		return 'munipb-col-custom munipb-col-type-' . $type . ' munipb-col-key-' . sanitize_html_class( $key );
 	}
 
 	/**
 	 * Render a sub-department header row.
 	 *
-	 * @param array $child Sub-department data.
-	 * @param int   $inst  Instance.
+	 * @param array $child   Sub-department data.
+	 * @param int   $inst    Instance.
+	 * @param array $columns Visible columns.
+	 * @param bool  $inline  Whether the row spans the whole table.
 	 * @return string
 	 */
-	private static function render_subdept_row( $child, $inst ) {
-		$out  = '<tr class="munipb-subdept-row munipb-depth-' . (int) $child['depth'] . '" id="' . esc_attr( self::anchor( $child, $inst ) ) . '" data-munipb-subdept data-munipb-dept="' . esc_attr( (string) (int) $child['id'] ) . '">';
-		$out .= '<th scope="rowgroup" colspan="2" class="munipb-subdept-name">' . esc_html( $child['name'] ) . '</th>';
-		$out .= '<td class="munipb-col-phone" data-label="' . esc_attr__( 'Phone', 'municipal-phonebook' ) . '">' . self::render_phones( $child['phones'] ) . '</td>';
-		$out .= '<td class="munipb-col-email" data-label="' . esc_attr__( 'Email', 'municipal-phonebook' ) . '">' . self::render_email( $child['email'] ) . '</td>';
+	private static function render_subdept_row( $child, $inst, $columns, $inline ) {
+		$inline = (bool) $inline;
+		$legacy = ! $inline && munipb_is_legacy_column_set( $columns );
+		$class  = 'munipb-subdept-row munipb-depth-' . (int) $child['depth'];
+		if ( $inline ) {
+			$class .= ' munipb-subdept-band';
+		}
+		$out = '<tr class="' . esc_attr( $class ) . '" id="' . esc_attr( self::anchor( $child, $inst ) ) . '" data-munipb-subdept data-munipb-dept="' . esc_attr( (string) (int) $child['id'] ) . '" data-munipb-band="' . esc_attr( $inline ? '1' : '0' ) . '">';
+		if ( $legacy ) {
+			$out .= '<th scope="rowgroup" colspan="2" class="munipb-subdept-name">' . esc_html( $child['name'] ) . '</th>';
+			$out .= '<td class="munipb-col-phone" data-label="' . esc_attr__( 'Phone', 'municipal-phonebook' ) . '">' . self::render_phones( $child['phones'] ) . '</td>';
+			$out .= '<td class="munipb-col-email" data-label="' . esc_attr__( 'Email', 'municipal-phonebook' ) . '">' . self::render_email( $child['email'] ) . '</td>';
+		} else {
+			$phones   = self::render_phones( isset( $child['phones'] ) ? $child['phones'] : array() );
+			$email    = self::render_email( isset( $child['email'] ) ? $child['email'] : '' );
+			$contacts = ( '' !== $phones || '' !== $email ) ? '<span class="munipb-subdept-contacts">' . $phones . $email . '</span>' : '';
+			$span     = max( 1, count( $columns ) );
+			$out     .= '<th scope="rowgroup" colspan="' . (int) $span . '" class="munipb-subdept-name">' . esc_html( $child['name'] ) . $contacts . '</th>';
+		}
 		$out .= '</tr>';
 		return $out;
 	}
@@ -588,19 +665,143 @@ class Munipb_Frontend {
 	/**
 	 * Render a contact row.
 	 *
-	 * @param array $entry   Entry data.
-	 * @param int   $inst    Instance.
-	 * @param int   $dept_id Department the row belongs to (section id or sub-department id).
+	 * @param array $entry       Entry data.
+	 * @param int   $inst        Instance.
+	 * @param int   $dept_id     Department the row belongs to.
+	 * @param array $columns     Columns in this table, including columns added by a child.
+	 * @param array $own_columns Columns that belong to this row's department.
+	 * @param int   $stripe      1-based position inside the current group.
 	 * @return string
 	 */
-	private static function render_entry_row( $entry, $inst, $dept_id ) {
-		$out  = '<tr class="munipb-entry-row" id="' . esc_attr( self::entry_anchor( $entry['id'], $inst ) ) . '" data-munipb-entry data-munipb-dept="' . esc_attr( (string) (int) $dept_id ) . '">';
-		$out .= '<td class="munipb-col-name">' . esc_html( $entry['name'] ) . '</td>';
-		$out .= '<td class="munipb-col-role" data-label="' . esc_attr__( 'Role', 'municipal-phonebook' ) . '">' . esc_html( $entry['role'] ) . '</td>';
-		$out .= '<td class="munipb-col-phone" data-label="' . esc_attr__( 'Phone', 'municipal-phonebook' ) . '">' . self::render_phones( $entry['phones'] ) . '</td>';
-		$out .= '<td class="munipb-col-email" data-label="' . esc_attr__( 'Email', 'municipal-phonebook' ) . '">' . self::render_email( $entry['email'] ) . '</td>';
+	private static function render_entry_row( $entry, $inst, $dept_id, $columns, $own_columns, $stripe ) {
+		$own_columns = is_array( $own_columns ) ? $own_columns : $columns;
+		$own_keys    = array();
+		foreach ( $own_columns as $column ) {
+			if ( is_array( $column ) && ! empty( $column['key'] ) ) {
+				$own_keys[] = (string) $column['key'];
+			}
+		}
+		$custom = ( isset( $entry['custom'] ) && is_array( $entry['custom'] ) ) ? $entry['custom'] : array();
+		$phones = munipb_phones_text( isset( $entry['phones'] ) ? $entry['phones'] : array() );
+		$search = trim(
+			implode(
+				' ',
+				array(
+					$entry['name'],
+					( in_array( 'role', $own_keys, true ) && isset( $entry['role'] ) ) ? $entry['role'] : '',
+					( in_array( 'email', $own_keys, true ) && isset( $entry['email'] ) ) ? $entry['email'] : '',
+					in_array( 'phone', $own_keys, true ) ? $phones : '',
+					munipb_custom_visible_text( $custom, $own_columns ),
+				)
+			)
+		);
+		$digits = preg_replace( '/\D/', '', ( in_array( 'phone', $own_keys, true ) ? $phones : '' ) . ' ' . munipb_custom_visible_text( $custom, $own_columns ) );
+		$parity = ( 0 === $stripe % 2 ) ? 'even' : 'odd';
+		$out    = '<tr class="munipb-entry-row munipb-row-' . $parity . '" id="' . esc_attr( self::entry_anchor( $entry['id'], $inst ) ) . '" data-munipb-entry data-munipb-dept="' . esc_attr( (string) (int) $dept_id ) . '"';
+		$out   .= ' data-munipb-name="' . esc_attr( $entry['name'] ) . '" data-munipb-search="' . esc_attr( $search ) . '" data-munipb-digits="' . esc_attr( (string) $digits ) . '">';
+		foreach ( $columns as $column ) {
+			if ( ! in_array( (string) $column['key'], $own_keys, true ) ) {
+				$out .= '<td class="' . esc_attr( self::column_class( $column ) ) . '" data-label="' . esc_attr( munipb_column_label( $column ) ) . '"></td>';
+				continue;
+			}
+			$out .= self::render_entry_cell( $entry, $column );
+		}
 		$out .= '</tr>';
 		return $out;
+	}
+
+	/**
+	 * One contact cell.
+	 *
+	 * @param array $entry  Entry data.
+	 * @param array $column Column definition.
+	 * @return string Escaped HTML.
+	 */
+	private static function render_entry_cell( $entry, $column ) {
+		$key   = (string) $column['key'];
+		$class = self::column_class( $column );
+		$label = munipb_column_label( $column );
+		if ( 'name' === $key ) {
+			return '<td class="' . esc_attr( $class ) . '">' . esc_html( $entry['name'] ) . '</td>';
+		}
+		if ( 'role' === $key ) {
+			$inner = esc_html( isset( $entry['role'] ) ? $entry['role'] : '' );
+		} elseif ( 'phone' === $key ) {
+			$inner = self::render_phones( isset( $entry['phones'] ) ? $entry['phones'] : array() );
+		} elseif ( 'email' === $key ) {
+			$inner = self::render_email( isset( $entry['email'] ) ? $entry['email'] : '' );
+		} else {
+			$value = ( isset( $entry['custom'][ $key ] ) ) ? $entry['custom'][ $key ] : '';
+			$inner = self::render_custom_value( $column, $value, $entry['name'] );
+		}
+		return '<td class="' . esc_attr( $class ) . '" data-label="' . esc_attr( $label ) . '">' . $inner . '</td>';
+	}
+
+	/**
+	 * Render a custom column value. Files are public attachment URLs only.
+	 *
+	 * @param array      $column Column definition.
+	 * @param string|int $value  Stored value.
+	 * @param string     $person Contact name, used in the file link label.
+	 * @return string Escaped HTML.
+	 */
+	private static function render_custom_value( $column, $value, $person ) {
+		$type = isset( $column['type'] ) ? (string) $column['type'] : 'text';
+		if ( 'phone' === $type ) {
+			return self::render_phones( munipb_parse_phone_groups( (string) $value ) );
+		}
+		if ( 'email' === $type ) {
+			return self::render_email( (string) $value );
+		}
+		if ( 'url' === $type ) {
+			$url = munipb_sanitize_public_url( $value );
+			if ( '' === $url ) {
+				return '';
+			}
+			return '<a class="munipb-url" href="' . esc_url( $url ) . '" rel="noopener noreferrer">' . esc_html( $url ) . '</a>';
+		}
+		if ( 'file' === $type ) {
+			return self::render_file_link( $column, $value, $person );
+		}
+		return esc_html( (string) $value );
+	}
+
+	/**
+	 * Download link for a file column.
+	 *
+	 * @param array  $column Column definition.
+	 * @param mixed  $id     Attachment id.
+	 * @param string $person Contact name.
+	 * @return string
+	 */
+	private static function render_file_link( $column, $id, $person ) {
+		$file = munipb_attachment_download( $id );
+		if ( '' === $file['url'] ) {
+			return '';
+		}
+		$link = munipb_column_link_text( $column );
+		$aria = sprintf(
+			/* translators: 1: column label, 2: contact name. */
+			__( 'Download %1$s for %2$s', 'municipal-phonebook' ),
+			munipb_column_label( $column ),
+			$person
+		);
+		$out  = '<a class="munipb-file" href="' . esc_url( $file['url'] ) . '"';
+		$out .= '' !== $file['name'] ? ' download="' . esc_attr( $file['name'] ) . '"' : ' download';
+		$out .= ' aria-label="' . esc_attr( $aria ) . '">';
+		$out .= '<span class="munipb-file-label">' . esc_html( $link ) . '</span>';
+		$out .= self::icon_download();
+		$out .= '</a>';
+		return $out;
+	}
+
+	/**
+	 * Download icon. Static markup.
+	 *
+	 * @return string
+	 */
+	private static function icon_download() {
+		return '<svg class="munipb-file-icon" aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M12 3v12"></path><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M8 11l4 4 4-4"></path><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M4 21h16"></path></svg>';
 	}
 
 	/**

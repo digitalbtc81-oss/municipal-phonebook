@@ -1,0 +1,47 @@
+.munipb-columns .munipb-col-move,
+.munipb-column-picker .munipb-drag,
+.munipb-column-picker .munipb-up,
+.munipb-column-picker .munipb-down {
+	white-space: nowrap;
+}
+
+.munipb-column-row,
+.munipb-column-picker li {
+	cursor: grab;
+}
+
+.munipb-column-picker {
+	margin: 0.5rem 0;
+	max-width: 40rem;
+}
+
+.munipb-column-picker li {
+	display: flex;
+	align-items: center;
+	gap: 0.4rem;
+	margin: 0;
+	padding: 0.35rem 0.5rem;
+	border: 1px solid #dcdcde;
+	border-bottom: 0;
+	background: #fff;
+}
+
+.munipb-column-picker li:last-child {
+	border-bottom: 1px solid #dcdcde;
+}
+
+.munipb-column-picker code {
+	margin-left: 0.4rem;
+	color: #646970;
+}
+
+.munipb-file-field {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.4rem;
+}
+
+.munipb-column-key[readonly] {
+	background: #f6f7f7;
+}

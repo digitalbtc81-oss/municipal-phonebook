@@ -77,9 +77,9 @@ class Munipb_CSV {
 			<h2><?php esc_html_e( 'Import', 'municipal-phonebook' ); ?></h2>
 			<p>
 				<?php esc_html_e( 'UTF-8 CSV, comma or semicolon separated, first row is the header:', 'municipal-phonebook' ); ?>
-				<code><?php echo esc_html( implode( ',', self::COLUMNS ) ); ?></code>
+				<code><?php echo esc_html( implode( ',', self::header_columns() ) ); ?></code>
 			</p>
-			<p class="description"><?php esc_html_e( 'Phones: groups separated by ";" and numbers in a group by "|". A row with a sub-department but no name sets that sub-department\'s own phones/email. Missing departments are created.', 'municipal-phonebook' ); ?></p>
+			<p class="description"><?php esc_html_e( 'Phones: groups separated by ";" and numbers in a group by "|". A row with a sub-department but no name sets that sub-department\'s own phones/email. Missing departments are created. Extra columns use the column slug. A file column is an attachment ID or a file URL.', 'municipal-phonebook' ); ?></p>
 			<form method="post" enctype="multipart/form-data" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
 				<input type="hidden" name="action" value="munipb_import">
 				<?php wp_nonce_field( self::NONCE_IMP, 'munipb_nonce' ); ?>
@@ -94,6 +94,39 @@ class Munipb_CSV {
 			</form>
 		</div>
 		<?php
+	}
+
+	/**
+	 * CSV header, including one column per custom slug.
+	 *
+	 * @return string[]
+	 */
+	public static function header_columns() {
+		$keys = self::COLUMNS;
+		foreach ( munipb_get_columns() as $column ) {
+			if ( ! munipb_column_is_builtin( $column['key'] ) ) {
+				$keys[] = $column['key'];
+			}
+		}
+		return $keys;
+	}
+
+	/**
+	 * Custom-column cells for one exported contact, in header order.
+	 *
+	 * @param array $entry Contact.
+	 * @return string[]
+	 */
+	private static function custom_cells( $entry ) {
+		$custom = ( isset( $entry['custom'] ) && is_array( $entry['custom'] ) ) ? $entry['custom'] : array();
+		$cells  = array();
+		foreach ( munipb_get_columns() as $column ) {
+			if ( munipb_column_is_builtin( $column['key'] ) ) {
+				continue;
+			}
+			$cells[] = isset( $custom[ $column['key'] ] ) ? (string) $custom[ $column['key'] ] : '';
+		}
+		return $cells;
 	}
 
 	/**
@@ -135,25 +168,26 @@ class Munipb_CSV {
 
 		$out = fopen( 'php://output', 'w' );
 		fwrite( $out, "\xEF\xBB\xBF" ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fwrite -- streaming to php://output.
-		fputcsv( $out, self::COLUMNS, ',', '"', '\\' );
+		fputcsv( $out, self::header_columns(), ',', '"', '\\' );
 
 		$phones_str = static function ( $groups ) {
 			return str_replace( "\n", '; ', munipb_phone_groups_to_string( $groups ) );
 		};
 
+		$blank_custom = self::custom_cells( array() );
 		foreach ( munipb_get_directory() as $section ) {
 			$order = 0;
 			foreach ( $section['entries'] as $e ) {
-				fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array( $section['name'], '', $e['name'], $e['role'], $phones_str( $e['phones'] ), $e['email'], ++$order ) ), ',', '"', '\\' );
+				fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array_merge( array( $section['name'], '', $e['name'], $e['role'], $phones_str( $e['phones'] ), $e['email'], ++$order ), self::custom_cells( $e ) ) ), ',', '"', '\\' );
 			}
 			foreach ( $section['children'] as $child ) {
 				if ( $child['phones'] || $child['email'] ) {
-					fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array( $section['name'], $child['name'], '', '', $phones_str( $child['phones'] ), $child['email'], '' ) ), ',', '"', '\\' );
+					fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array_merge( array( $section['name'], $child['name'], '', '', $phones_str( $child['phones'] ), $child['email'], '' ), $blank_custom ) ), ',', '"', '\\' );
 				} else {
-					fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array( $section['name'], $child['name'], '', '', '', '', '' ) ), ',', '"', '\\' );
+					fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array_merge( array( $section['name'], $child['name'], '', '', '', '', '' ), $blank_custom ) ), ',', '"', '\\' );
 				}
 				foreach ( $child['entries'] as $e ) {
-					fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array( $section['name'], $child['name'], $e['name'], $e['role'], $phones_str( $e['phones'] ), $e['email'], ++$order ) ), ',', '"', '\\' );
+					fputcsv( $out, array_map( array( __CLASS__, 'safe_cell' ), array_merge( array( $section['name'], $child['name'], $e['name'], $e['role'], $phones_str( $e['phones'] ), $e['email'], ++$order ), self::custom_cells( $e ) ) ), ',', '"', '\\' );
 				}
 			}
 		}
@@ -351,6 +385,22 @@ class Munipb_CSV {
 			}
 			if ( $email ) {
 				update_post_meta( $post_id, '_munipb_email', $email );
+			}
+			$custom = array();
+			foreach ( munipb_get_columns() as $column ) {
+				if ( munipb_column_is_builtin( $column['key'] ) || ! isset( $map[ $column['key'] ] ) ) {
+					continue;
+				}
+				$cell = $get( $row, $column['key'] );
+				if ( 'file' === $column['type'] && '' !== $cell && 1 !== preg_match( '/^\d+$/', $cell ) ) {
+					$url  = munipb_sanitize_public_url( $cell );
+					$cell = ( '' !== $url && function_exists( 'attachment_url_to_postid' ) ) ? (string) attachment_url_to_postid( $url ) : '';
+				}
+				$custom[ $column['key'] ] = $cell;
+			}
+			$stored = munipb_sanitize_entry_custom( $custom );
+			if ( $stored ) {
+				update_post_meta( $post_id, '_munipb_custom', $stored );
 			}
 			++$imported;
 		}

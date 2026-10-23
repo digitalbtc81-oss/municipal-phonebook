@@ -152,21 +152,22 @@
 					} );
 					return;
 				}
-				var name = textOf( row.querySelector( '.munipb-col-name' ) );
+				var name = row.getAttribute( 'data-munipb-name' ) || textOf( row.querySelector( '.munipb-col-name' ) );
 				if ( ! name ) {
 					return;
 				}
 				var role = textOf( row.querySelector( '.munipb-col-role' ) );
 				var phone = textOf( row.querySelector( '.munipb-col-phone' ) );
 				var email = textOf( row.querySelector( '.munipb-col-email' ) );
+				var extra = row.getAttribute( 'data-munipb-search' ) || '';
 				data.push( {
 					type: 'entry',
 					title: name,
 					meta: [ role, phone ].filter( Boolean ).join( ' • ' ),
 					context: currentSub || sectionName,
 					el: row,
-					search: normalize( [ name, role, phone, email, currentSub, sectionName ].join( ' ' ) ),
-					digits: digitsOnly( phone )
+					search: normalize( [ extra, name, role, phone, email, currentSub, sectionName ].join( ' ' ) ),
+					digits: row.getAttribute( 'data-munipb-digits' ) || digitsOnly( phone )
 				} );
 			} );
 		} );
@@ -264,16 +265,21 @@
 					var deptId = row.getAttribute( 'data-munipb-dept' ) || '';
 					var allowed = sectionOn || selected.indexOf( deptId ) !== -1;
 					var subName = textOf( row.querySelector( '.munipb-subdept-name' ) );
+					var band = row.getAttribute( 'data-munipb-band' ) === '1';
 					var headerBlob = normalize( [ subName, sectionName, textOf( row ) ].join( ' ' ) );
-					var headerDigits = digitsOnly( textOf( row.querySelector( '.munipb-col-phone' ) ) );
+					var headerDigits = digitsOnly( textOf( row ) );
 					var headerMatch = wordsMatch( headerBlob, headerDigits, words );
 					var entryVisible = false;
 					var j = i + 1;
 
 					while ( j < rows.length && ! rows[ j ].hasAttribute( 'data-munipb-subdept' ) ) {
 						var entry = rows[ j ];
-						var blob = normalize( [ textOf( entry ), subName, sectionName ].join( ' ' ) );
-						var show = allowed && wordsMatch( blob, digitsOnly( textOf( entry.querySelector( '.munipb-col-phone' ) ) ), words );
+						var blob = normalize( [ entry.getAttribute( 'data-munipb-search' ) || textOf( entry ), subName, sectionName ].join( ' ' ) );
+						var entryDigits = entry.getAttribute( 'data-munipb-digits' ) || digitsOnly( textOf( entry.querySelector( '.munipb-col-phone' ) ) );
+						var show = allowed && wordsMatch( blob, entryDigits, words );
+						if ( ! show && band && words.length && headerMatch ) {
+							show = allowed;
+						}
 						setHidden( entry, ! show );
 						if ( show ) {
 							entryVisible = true;
@@ -281,7 +287,7 @@
 						j++;
 					}
 
-					var showHeader = allowed && ( headerMatch || entryVisible );
+					var showHeader = allowed && ( band ? entryVisible : ( headerMatch || entryVisible ) );
 					setHidden( row, ! showHeader );
 					if ( showHeader || entryVisible ) {
 						sectionHas = true;
@@ -290,8 +296,9 @@
 					continue;
 				}
 
-				var entryBlob = normalize( [ textOf( row ), sectionName ].join( ' ' ) );
-				var showEntry = sectionOn && wordsMatch( entryBlob, digitsOnly( textOf( row.querySelector( '.munipb-col-phone' ) ) ), words );
+				var entryBlob = normalize( [ row.getAttribute( 'data-munipb-search' ) || textOf( row ), sectionName ].join( ' ' ) );
+				var entryDigits = row.getAttribute( 'data-munipb-digits' ) || digitsOnly( textOf( row.querySelector( '.munipb-col-phone' ) ) );
+				var showEntry = sectionOn && wordsMatch( entryBlob, entryDigits, words );
 				setHidden( row, ! showEntry );
 				if ( showEntry ) {
 					sectionHas = true;
@@ -313,13 +320,21 @@
 	}
 
 	/**
-	 * Odd/even classes follow the rows that are still visible, per department.
+	 * Odd/even classes follow the rows that are still visible.
+	 * The count starts again after each sub-department row.
 	 * :nth-child would keep counting rows hidden by the filter.
 	 */
 	function stripeRows( root ) {
 		root.querySelectorAll( '.munipb-section' ).forEach( function ( section ) {
 			var n = 0;
-			section.querySelectorAll( 'tbody tr.munipb-entry-row' ).forEach( function ( row ) {
+			section.querySelectorAll( 'tbody tr' ).forEach( function ( row ) {
+				if ( row.hasAttribute( 'data-munipb-subdept' ) ) {
+					n = 0;
+					return;
+				}
+				if ( ! row.classList.contains( 'munipb-entry-row' ) ) {
+					return;
+				}
 				row.classList.remove( 'munipb-row-odd', 'munipb-row-even' );
 				if ( row.hidden || row.classList.contains( 'munipb-is-hidden' ) ) {
 					return;

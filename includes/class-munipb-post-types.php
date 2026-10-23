@@ -157,12 +157,74 @@ class Munipb_Post_Types {
 		);
 		register_post_meta(
 			self::POST_TYPE,
+			'_munipb_custom',
+			array(
+				'type'              => 'object',
+				'single'            => true,
+				'sanitize_callback' => 'munipb_sanitize_entry_custom',
+				'auth_callback'     => $auth,
+				'show_in_rest'      => false,
+			)
+		);
+		register_post_meta(
+			self::POST_TYPE,
 			'_munipb_private_note',
 			array(
 				'type'              => 'string',
 				'single'            => true,
 				'sanitize_callback' => 'sanitize_textarea_field',
 				'auth_callback'     => $auth,
+				'show_in_rest'      => false,
+			)
+		);
+
+		$term_auth = static function () {
+			return current_user_can( 'manage_categories' );
+		};
+		register_term_meta(
+			self::TAXONOMY,
+			'munipb_inline_children',
+			array(
+				'type'              => 'string',
+				'single'            => true,
+				'sanitize_callback' => static function ( $value ) {
+					$value = (string) $value;
+					return ( '0' === $value || '1' === $value ) ? $value : '';
+				},
+				'auth_callback'     => $term_auth,
+				'show_in_rest'      => false,
+			)
+		);
+		register_term_meta(
+			self::TAXONOMY,
+			'munipb_columns_mode',
+			array(
+				'type'              => 'string',
+				'single'            => true,
+				'sanitize_callback' => static function ( $value ) {
+					return 'custom' === $value ? 'custom' : 'inherit';
+				},
+				'auth_callback'     => $term_auth,
+				'show_in_rest'      => false,
+			)
+		);
+		register_term_meta(
+			self::TAXONOMY,
+			'munipb_columns',
+			array(
+				'type'              => 'array',
+				'single'            => true,
+				'sanitize_callback' => static function ( $value ) {
+					$keys = array();
+					foreach ( (array) $value as $key ) {
+						$key = munipb_sanitize_column_key( $key );
+						if ( '' !== $key && ! in_array( $key, $keys, true ) ) {
+							$keys[] = $key;
+						}
+					}
+					return $keys;
+				},
+				'auth_callback'     => $term_auth,
 				'show_in_rest'      => false,
 			)
 		);

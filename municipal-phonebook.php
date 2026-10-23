@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Municipal Phonebook
  * Description:       Searchable telephone directory grouped by departments and sub-departments, with accent-insensitive Greek search, category filter, responsive cards, shortcode, block and Elementor widget.
- * Version:           1.4.2
+ * Version:           1.5.0
  * Update URI:        https://github.com/digitalbtc81-oss/municipal-phonebook
  * Requires at least: 6.2
  * Requires PHP:      7.4
@@ -18,7 +18,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'MUNIPB_VERSION', '1.4.2' );
+define( 'MUNIPB_VERSION', '1.5.0' );
 define( 'MUNIPB_FILE', __FILE__ );
 define( 'MUNIPB_DIR', plugin_dir_path( __FILE__ ) );
 define( 'MUNIPB_URL', plugin_dir_url( __FILE__ ) );
@@ -32,6 +32,7 @@ require_once MUNIPB_DIR . 'includes/class-munipb-updater.php';
 
 if ( is_admin() ) {
 	require_once MUNIPB_DIR . 'includes/class-munipb-admin.php';
+	require_once MUNIPB_DIR . 'includes/class-munipb-columns-admin.php';
 	require_once MUNIPB_DIR . 'includes/class-munipb-csv.php';
 }
 
@@ -52,6 +53,7 @@ function munipb_bootstrap() {
 
 	if ( is_admin() ) {
 		Munipb_Admin::init();
+		Munipb_Columns_Admin::init();
 		Munipb_CSV::init();
 	}
 }

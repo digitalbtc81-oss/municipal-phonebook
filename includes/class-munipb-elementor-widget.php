@@ -330,6 +330,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 		$this->color( 'row_odd', __( 'Odd row color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory' => '--munipb-row-odd: {{VALUE}};' ) );
 		$this->color( 'row_even', __( 'Even row color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory' => '--munipb-row-even: {{VALUE}};' ) );
 		$this->color( 'subdept_color', __( 'Sub-department text color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-subdept-row th, {{WRAPPER}} .munipb-subdept-row td' => 'color: {{VALUE}};' ) );
+		$this->color( 'sub_header', __( 'Sub-header row', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory' => '--munipb-sub-header: {{VALUE}};' ) );
 		$this->add_responsive_control(
 			'cell_padding',
 			array(
@@ -368,11 +369,11 @@ class Munipb_Elementor_Widget extends Widget_Base {
 			Group_Control_Typography::get_type(),
 			array(
 				'name'     => 'link_typography',
-				'selector' => '{{WRAPPER}} .munipb-phone, {{WRAPPER}} .munipb-email',
+				'selector' => '{{WRAPPER}} .munipb-phone, {{WRAPPER}} .munipb-email, {{WRAPPER}} .munipb-file, {{WRAPPER}} .munipb-url',
 			)
 		);
-		$this->color( 'link_color', __( 'Color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-phone, {{WRAPPER}} .munipb-email' => 'color: {{VALUE}};' ) );
-		$this->color( 'link_hover', __( 'Hover color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-phone:hover, {{WRAPPER}} .munipb-email:hover, {{WRAPPER}} .munipb-phone:focus, {{WRAPPER}} .munipb-email:focus' => 'color: {{VALUE}};' ) );
+		$this->color( 'link_color', __( 'Color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-phone, {{WRAPPER}} .munipb-email, {{WRAPPER}} .munipb-file, {{WRAPPER}} .munipb-url' => 'color: {{VALUE}};' ) );
+		$this->color( 'link_hover', __( 'Hover color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-phone:hover, {{WRAPPER}} .munipb-email:hover, {{WRAPPER}} .munipb-file:hover, {{WRAPPER}} .munipb-url:hover, {{WRAPPER}} .munipb-phone:focus, {{WRAPPER}} .munipb-email:focus, {{WRAPPER}} .munipb-file:focus, {{WRAPPER}} .munipb-url:focus' => 'color: {{VALUE}};' ) );
 		$this->end_controls_section();
 	}
 

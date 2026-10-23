@@ -6,6 +6,7 @@
 	--munipb-border: #e0e0e0;
 	--munipb-bg-soft: #f4f8fb;
 	--munipb-sub-bg: #e8f4fc;
+	--munipb-sub-header: #d3dceb;
 	--munipb-flash: #fff3cd;
 	--munipb-radius: 10px;
 	--munipb-toolbar: #2b59c3;
@@ -386,6 +387,35 @@
 
 .munipb-subdept-name::before {
 	content: "— ";
+}
+
+.munipb-subdept-band .munipb-subdept-name::before {
+	content: none;
+}
+
+.munipb-subdept-contacts {
+	display: block;
+	margin-top: 0.2rem;
+	font-weight: 500;
+	font-size: 0.92rem;
+}
+
+.munipb-file {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	color: var(--munipb-primary);
+	font-weight: 600;
+	text-decoration: none;
+}
+
+.munipb-file:hover,
+.munipb-file:focus {
+	text-decoration: underline;
+}
+
+.munipb-file-icon {
+	flex: 0 0 auto;
 }
 
 .munipb-depth-2 .munipb-subdept-name {
@@ -1135,17 +1165,23 @@
 
 .munipb-directory .munipb-content .munipb-table a.munipb-phone,
 .munipb-directory .munipb-content .munipb-table a.munipb-email,
+.munipb-directory .munipb-content .munipb-table a.munipb-file,
+.munipb-directory .munipb-content .munipb-table a.munipb-url,
 .munipb-directory .munipb-content .munipb-table a.munipb-phone:hover,
 .munipb-directory .munipb-content .munipb-table a.munipb-email:hover,
+.munipb-directory .munipb-content .munipb-table a.munipb-file:hover,
+.munipb-directory .munipb-content .munipb-table a.munipb-url:hover,
 .munipb-directory .munipb-content .munipb-table a.munipb-phone:focus,
-.munipb-directory .munipb-content .munipb-table a.munipb-email:focus {
+.munipb-directory .munipb-content .munipb-table a.munipb-email:focus,
+.munipb-directory .munipb-content .munipb-table a.munipb-file:focus,
+.munipb-directory .munipb-content .munipb-table a.munipb-url:focus {
 	color: var(--munipb-primary);
 }
 
-.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd),
-.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd) > td,
-.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd):hover,
-.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd):hover > td,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd):not(.munipb-row-odd):not(.munipb-row-even),
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd):not(.munipb-row-odd):not(.munipb-row-even) > td,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd):not(.munipb-row-odd):not(.munipb-row-even):hover,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd):not(.munipb-row-odd):not(.munipb-row-even):hover > td,
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-odd,
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-odd > td,
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-odd:hover,
@@ -1155,10 +1191,10 @@
 	background-image: none;
 }
 
-.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even),
-.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even) > td,
-.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even):hover,
-.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even):hover > td,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even):not(.munipb-row-odd):not(.munipb-row-even),
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even):not(.munipb-row-odd):not(.munipb-row-even) > td,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even):not(.munipb-row-odd):not(.munipb-row-even):hover,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even):not(.munipb-row-odd):not(.munipb-row-even):hover > td,
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-even,
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-even > td,
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-even:hover,
@@ -1182,6 +1218,36 @@
 	border-bottom: 1px solid var(--munipb-border);
 }
 
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-band,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-band > th,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-band > td,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-band:hover,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-band:hover > th,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-band:hover > td {
+	background: var(--munipb-sub-header);
+	background-color: var(--munipb-sub-header);
+	background-image: none;
+	color: var(--munipb-primary-dark);
+}
+
+.munipb-directory.munipb-bp-always .munipb-table tr.munipb-subdept-band {
+	margin-bottom: 0.35rem;
+	border-left-color: var(--munipb-sub-header);
+	background: var(--munipb-sub-header);
+	box-shadow: none;
+}
+
+.munipb-directory.munipb-bp-always .munipb-table td.munipb-col-custom[data-label]::before {
+	content: attr(data-label);
+	display: block;
+	margin-bottom: 0.1rem;
+	font-size: 0.75rem;
+	font-weight: 700;
+	letter-spacing: 0.02em;
+	text-transform: uppercase;
+	color: var(--munipb-primary-dark);
+}
+
 .munipb-directory.munipb-bp-always .munipb-content .munipb-table tbody tr.munipb-entry-row > td,
 .munipb-directory.munipb-bp-always .munipb-content .munipb-table tbody tr.munipb-subdept-row > td,
 .munipb-directory.munipb-bp-always .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
@@ -1195,6 +1261,23 @@
 	.munipb-directory.munipb-bp-480 .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
 		border: 0;
 	}
+
+	.munipb-directory.munipb-bp-480 .munipb-table tr.munipb-subdept-band {
+		margin-bottom: 0.35rem;
+		border-left-color: var(--munipb-sub-header);
+		background: var(--munipb-sub-header);
+	}
+
+	.munipb-directory.munipb-bp-480 .munipb-table td.munipb-col-custom[data-label]::before {
+		content: attr(data-label);
+		display: block;
+		margin-bottom: 0.1rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: var(--munipb-primary-dark);
+	}
 }
 
 @container munipb (max-width: 720px) {
@@ -1204,6 +1287,23 @@
 	.munipb-directory.munipb-bp-720 .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
 		border: 0;
 	}
+
+	.munipb-directory.munipb-bp-720 .munipb-table tr.munipb-subdept-band {
+		margin-bottom: 0.35rem;
+		border-left-color: var(--munipb-sub-header);
+		background: var(--munipb-sub-header);
+	}
+
+	.munipb-directory.munipb-bp-720 .munipb-table td.munipb-col-custom[data-label]::before {
+		content: attr(data-label);
+		display: block;
+		margin-bottom: 0.1rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: var(--munipb-primary-dark);
+	}
 }
 
 @container munipb (max-width: 960px) {
@@ -1212,5 +1312,22 @@
 	.munipb-directory.munipb-bp-960 .munipb-content .munipb-table tbody tr.munipb-subdept-row > td,
 	.munipb-directory.munipb-bp-960 .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
 		border: 0;
+	}
+
+	.munipb-directory.munipb-bp-960 .munipb-table tr.munipb-subdept-band {
+		margin-bottom: 0.35rem;
+		border-left-color: var(--munipb-sub-header);
+		background: var(--munipb-sub-header);
+	}
+
+	.munipb-directory.munipb-bp-960 .munipb-table td.munipb-col-custom[data-label]::before {
+		content: attr(data-label);
+		display: block;
+		margin-bottom: 0.1rem;
+		font-size: 0.75rem;
+		font-weight: 700;
+		letter-spacing: 0.02em;
+		text-transform: uppercase;
+		color: var(--munipb-primary-dark);
 	}
 }
