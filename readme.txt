@@ -4,7 +4,7 @@ Tags: phonebook, directory, contacts, municipality, greek
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.0
+Stable tag: 1.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -81,6 +81,9 @@ Options and caches are always removed. Contacts and departments are removed only
 Yes. Phonebook → Settings → Custom CSS applies to every directory, and only on pages that show one. The Elementor widget has its own Custom CSS field on the Advanced tab: the word `selector` means that widget's directory (`.munipb-directory`). CSS with HTML, a style tag, unbalanced braces, or an unclosed comment is rejected.
 
 == Changelog ==
+
+= 1.5.1 =
+* The department heading sits flush on its table, with square bottom corners. The table and its cells have no border, including under the Hello Elementor reset. Odd and even row colors still separate the contacts. Card layout keeps a gap under the heading.
 
 = 1.5.0 =
 * Child departments can be a sub-header row inside the parent table. The sub-header color is configurable in Settings and in the Elementor widget. Search hides a sub-header when none of its contacts match, and row stripes start again after each sub-header.
