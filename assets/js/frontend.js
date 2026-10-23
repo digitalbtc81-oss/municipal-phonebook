@@ -509,7 +509,12 @@
 				e.preventDefault();
 				go( selected >= 0 ? selected : 0 );
 			} else if ( e.key === 'Escape' ) {
+				var empty = input.value.trim() === '';
 				hide();
+				if ( empty && state.closeSearch ) {
+					e.preventDefault();
+					state.closeSearch();
+				}
 			}
 		} );
 
@@ -659,6 +664,15 @@
 				input.focus();
 			}
 		}
+
+		state.closeSearch = function () {
+			form.classList.remove( 'is-open' );
+			button.setAttribute( 'aria-expanded', 'false' );
+			if ( state.hideResults ) {
+				state.hideResults();
+			}
+			button.focus();
+		};
 
 		button.addEventListener( 'click', function () {
 			openSearch();

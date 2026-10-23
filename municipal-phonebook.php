@@ -48,6 +48,9 @@ function munipb_bootstrap() {
 	Munipb_Elementor::init();
 	Munipb_Updater::init();
 
+	// Always, not only on the settings screen: a partial update_option() must not drop row colors.
+	add_filter( 'sanitize_option_munipb_settings', 'munipb_sanitize_settings' );
+
 	if ( is_admin() ) {
 		Munipb_Admin::init();
 		Munipb_CSV::init();
@@ -56,21 +59,46 @@ function munipb_bootstrap() {
 add_action( 'plugins_loaded', 'munipb_bootstrap' );
 
 /**
+ * Older installs stored only the boolean settings. Fill missing row colors
+ * without touching a color the site already saved. Runs even when the version
+ * option already matches, because 1.4.0 shipped before these keys existed.
+ *
+ * @return void
+ */
+function munipb_backfill_settings() {
+	$settings = get_option( 'munipb_settings', null );
+	if ( ! is_array( $settings ) ) {
+		return;
+	}
+	$defaults = munipb_default_settings();
+	$changed  = false;
+	if ( array_key_exists( 'per_page', $settings ) ) {
+		unset( $settings['per_page'] );
+		$changed = true;
+	}
+	foreach ( array( 'row_odd', 'row_even' ) as $key ) {
+		if ( array_key_exists( $key, $settings ) && '' !== munipb_sanitize_hex( $settings[ $key ] ) ) {
+			continue;
+		}
+		$settings[ $key ] = $defaults[ $key ];
+		$changed          = true;
+	}
+	if ( $changed ) {
+		update_option( 'munipb_settings', $settings );
+	}
+}
+
+/**
  * Upgrade routine: runs once per version change and removes data older versions left behind.
  *
  * @return void
  */
 function munipb_maybe_upgrade() {
+	munipb_backfill_settings();
+
 	$installed = (string) get_option( 'munipb_version', '' );
 	if ( MUNIPB_VERSION === $installed ) {
 		return;
-	}
-
-	// 1.2.0 removed pagination: drop the orphan "per_page" setting.
-	$settings = get_option( 'munipb_settings' );
-	if ( is_array( $settings ) && array_key_exists( 'per_page', $settings ) ) {
-		unset( $settings['per_page'] );
-		update_option( 'munipb_settings', $settings );
 	}
 
 	// The cached GitHub release describes the previous install.

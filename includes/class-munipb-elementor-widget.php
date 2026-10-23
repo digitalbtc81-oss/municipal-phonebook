@@ -389,7 +389,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 				'condition' => array( 'show_search' => 'yes' ),
 			)
 		);
-		$input        = '{{WRAPPER}} .munipb-directory .munipb-search input.munipb-search-input';
+		$input        = '{{WRAPPER}} .munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input';
 		$input_states = implode(
 			', ',
 			array(
@@ -408,10 +408,11 @@ class Munipb_Elementor_Widget extends Widget_Base {
 			)
 		);
 		$this->color( 'search_color', __( 'Text color', 'municipal-phonebook' ), array( $input_states => 'color: {{VALUE}};' ) );
-		$this->color( 'search_bg', __( 'Background', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-box' => 'background-color: {{VALUE}};' ) );
-		$this->color( 'search_border', __( 'Border color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-box' => 'border-color: {{VALUE}};' ) );
-		$this->color( 'search_border_focus', __( 'Focus border color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-box:focus-within' => 'border-color: {{VALUE}};' ) );
-		$this->color( 'search_icon', __( 'Icon color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-icon' => 'color: {{VALUE}};' ) );
+		$box = '{{WRAPPER}} .munipb-directory .munipb-toolbar .munipb-search .munipb-search-box';
+		$this->color( 'search_bg', __( 'Background', 'municipal-phonebook' ), array( $box => 'background-color: {{VALUE}};' ) );
+		$this->color( 'search_border', __( 'Border color', 'municipal-phonebook' ), array( $box => 'border-color: {{VALUE}};' ) );
+		$this->color( 'search_border_focus', __( 'Focus border color', 'municipal-phonebook' ), array( $box . ':focus-within' => 'border-color: {{VALUE}};' ) );
+		$this->color( 'search_icon', __( 'Icon color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-toolbar .munipb-search .munipb-search-icon' => 'color: {{VALUE}};' ) );
 		$this->add_responsive_control(
 			'search_radius',
 			array(
@@ -424,7 +425,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 						'max' => 60,
 					),
 				),
-				'selectors'  => array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-box' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+				'selectors'  => array( '{{WRAPPER}} .munipb-directory .munipb-toolbar .munipb-search .munipb-search-box' => 'border-radius: {{SIZE}}{{UNIT}};' ),
 			)
 		);
 		$this->add_responsive_control(
@@ -439,7 +440,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 						'max' => 1200,
 					),
 				),
-				'selectors'  => array( '{{WRAPPER}} .munipb-directory .munipb-search' => 'max-width: {{SIZE}}{{UNIT}};' ),
+				'selectors'  => array( '{{WRAPPER}} .munipb-directory .munipb-toolbar .munipb-search' => 'max-width: {{SIZE}}{{UNIT}};' ),
 			)
 		);
 		$this->end_controls_section();

@@ -61,11 +61,12 @@ class Munipb_Frontend {
 		);
 
 		$settings = munipb_get_settings();
+		$defaults = munipb_default_settings();
 		$odd      = munipb_sanitize_hex( isset( $settings['row_odd'] ) ? $settings['row_odd'] : '' );
 		$even     = munipb_sanitize_hex( isset( $settings['row_even'] ) ? $settings['row_even'] : '' );
 		wp_add_inline_style(
 			self::HANDLE,
-			'.munipb-directory{--munipb-row-odd:' . ( '' !== $odd ? $odd : '#ffffff' ) . ';--munipb-row-even:' . ( '' !== $even ? $even : '#ffffff' ) . ';}'
+			'.munipb-directory{--munipb-row-odd:' . ( '' !== $odd ? $odd : $defaults['row_odd'] ) . ';--munipb-row-even:' . ( '' !== $even ? $even : $defaults['row_even'] ) . ';}'
 		);
 		$config = array(
 			'minChars'   => 2,
@@ -301,7 +302,7 @@ class Munipb_Frontend {
 		ob_start();
 		if ( ! self::$noscript_css ) {
 			self::$noscript_css = true;
-			echo '<noscript><style>.munipb-directory .munipb-search{display:block !important}</style></noscript>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static no-JS fallback.
+			echo '<noscript><style>.munipb-directory .munipb-search{display:flex !important;flex:1 1 12rem;min-width:0;margin:0}.munipb-directory .munipb-search-toggle{display:none !important}</style></noscript>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static no-JS fallback.
 		}
 		?>
 		<div class="<?php echo esc_attr( $classes ); ?>" id="<?php echo esc_attr( $id ); ?>" data-munipb-directory
@@ -339,6 +340,21 @@ class Munipb_Frontend {
 							</div>
 						</div>
 					<?php endif; ?>
+					<?php if ( $opts['search'] ) : ?>
+						<form class="munipb-search<?php echo esc_attr( '' !== $query ? ' is-open' : '' ); ?>" id="<?php echo esc_attr( $id . '-search' ); ?>" role="search" method="get" action="<?php echo esc_url( '#' . $id ); ?>">
+							<label class="munipb-sr-only" for="<?php echo esc_attr( $id . '-q' ); ?>"><?php esc_html_e( 'Search the phonebook', 'municipal-phonebook' ); ?></label>
+							<div class="munipb-search-box">
+								<?php echo self::icon_search(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+								<input type="search" class="munipb-search-input" id="<?php echo esc_attr( $id . '-q' ); ?>" name="munipb_q" value="<?php echo esc_attr( $query ); ?>" maxlength="100"
+									placeholder="<?php esc_attr_e( 'Search name, role, department, phone…', 'municipal-phonebook' ); ?>"
+									role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="<?php echo esc_attr( $id . '-results' ); ?>" autocomplete="off">
+								<button type="button" class="munipb-search-clear" hidden aria-label="<?php esc_attr_e( 'Clear search', 'municipal-phonebook' ); ?>">&times;</button>
+								<button type="submit" class="munipb-search-submit"><?php esc_html_e( 'Search', 'municipal-phonebook' ); ?></button>
+							</div>
+							<div class="munipb-search-results" id="<?php echo esc_attr( $id . '-results' ); ?>" role="listbox" aria-label="<?php esc_attr_e( 'Search results', 'municipal-phonebook' ); ?>" hidden></div>
+							<div class="munipb-sr-only munipb-search-status" role="status" aria-live="polite"></div>
+						</form>
+					<?php endif; ?>
 					<div class="munipb-toolbar-end">
 						<?php if ( $opts['search'] ) : ?>
 							<button type="button" class="munipb-tool munipb-pill munipb-search-toggle" aria-expanded="<?php echo esc_attr( '' !== $query ? 'true' : 'false' ); ?>" aria-controls="<?php echo esc_attr( $id . '-search' ); ?>">
@@ -352,22 +368,6 @@ class Munipb_Frontend {
 						</button>
 					</div>
 				</div>
-			<?php endif; ?>
-
-			<?php if ( $opts['search'] ) : ?>
-				<form class="munipb-search<?php echo esc_attr( '' !== $query ? ' is-open' : '' ); ?>" id="<?php echo esc_attr( $id . '-search' ); ?>" role="search" method="get" action="<?php echo esc_url( '#' . $id ); ?>">
-					<label class="munipb-sr-only" for="<?php echo esc_attr( $id . '-q' ); ?>"><?php esc_html_e( 'Search the phonebook', 'municipal-phonebook' ); ?></label>
-					<div class="munipb-search-box">
-						<?php echo self::icon_search(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
-						<input type="search" class="munipb-search-input" id="<?php echo esc_attr( $id . '-q' ); ?>" name="munipb_q" value="<?php echo esc_attr( $query ); ?>" maxlength="100"
-							placeholder="<?php esc_attr_e( 'Search name, role, department, phone…', 'municipal-phonebook' ); ?>"
-							role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="<?php echo esc_attr( $id . '-results' ); ?>" autocomplete="off">
-						<button type="button" class="munipb-search-clear" hidden aria-label="<?php esc_attr_e( 'Clear search', 'municipal-phonebook' ); ?>">&times;</button>
-						<button type="submit" class="munipb-search-submit"><?php esc_html_e( 'Search', 'municipal-phonebook' ); ?></button>
-					</div>
-					<div class="munipb-search-results" id="<?php echo esc_attr( $id . '-results' ); ?>" role="listbox" aria-label="<?php esc_attr_e( 'Search results', 'municipal-phonebook' ); ?>" hidden></div>
-					<div class="munipb-sr-only munipb-search-status" role="status" aria-live="polite"></div>
-				</form>
 			<?php endif; ?>
 
 			<?php if ( $words ) : ?>

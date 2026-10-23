@@ -11,7 +11,7 @@
 	--munipb-toolbar: #2b59c3;
 	--munipb-toolbar-bg: #f4f5f7;
 	--munipb-row-odd: #ffffff;
-	--munipb-row-even: #ffffff;
+	--munipb-row-even: #f3f6fc;
 	max-width: 1200px;
 	margin: 0 auto;
 	container-type: inline-size;
@@ -56,7 +56,7 @@
 	flex-wrap: wrap;
 	align-items: center;
 	gap: 0.75rem 1.15rem;
-	margin-left: auto;
+	margin-left: 0;
 }
 
 .munipb-cats {
@@ -76,8 +76,9 @@
 	z-index: 40;
 	top: calc(100% + 6px);
 	left: 0;
-	min-width: 240px;
-	max-width: min(360px, 86vw);
+	min-width: min(280px, calc(100vw - 32px));
+	width: max-content;
+	max-width: min(420px, calc(100vw - 32px));
 	max-height: 320px;
 	overflow: auto;
 	margin: 0;
@@ -109,6 +110,7 @@
 	letter-spacing: normal;
 	text-transform: none;
 	text-decoration: none;
+	white-space: nowrap;
 	cursor: pointer;
 }
 
@@ -129,23 +131,34 @@
 	stroke: currentColor;
 }
 
-/* Search. Hidden until the Search button opens it; a noscript rule shows it without JS. */
+/* Search sits in the toolbar and stays hidden until Search opens it.
+   A noscript rule shows the field without JS. */
 .munipb-search {
 	position: relative;
-	display: block;
-	margin: 0 0 1.25rem;
+	display: none;
+	flex: 1 1 36rem;
+	align-items: center;
+	min-width: min(100%, 36rem);
+	margin: 0;
 	max-width: none;
 }
 
-.munipb-directory .munipb-search:not(.is-open) {
+.munipb-directory .munipb-search.is-open {
+	display: flex;
+}
+
+.munipb-directory.munipb-js .munipb-toolbar:has(.munipb-search.is-open) .munipb-search-toggle {
 	display: none;
 }
 
 .munipb-search-box {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
-	padding: 0 0.75rem;
+	gap: 0.45rem;
+	width: 100%;
+	min-height: 2rem;
+	margin: 0;
+	padding: 0 0.35rem 0 0.75rem;
 	background: #fff;
 	border: 1px solid var(--munipb-toolbar);
 	border-radius: 999px;
@@ -163,13 +176,31 @@
 
 .munipb-directory .munipb-search-input {
 	flex: 1 1 auto;
+	width: 100%;
 	min-width: 0;
-	padding: 0.85rem 0.25rem;
+	padding: 0.35rem 0.25rem;
 	border: 0;
 	background: transparent;
-	font-size: 1.05rem;
+	font-size: 0.875rem;
+	line-height: 1.2;
 	box-shadow: none;
 	outline: none;
+}
+
+.munipb-directory .munipb-search-input::placeholder {
+	color: #6b7c93;
+	opacity: 1;
+	text-overflow: clip;
+}
+
+@container munipb (max-width: 640px) {
+
+	.munipb-toolbar > .munipb-search {
+		flex: 1 0 100%;
+		width: 100%;
+		min-width: 0;
+		order: 2;
+	}
 }
 
 .munipb-search-input::-webkit-search-cancel-button,
@@ -877,10 +908,10 @@
 .munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):hover,
 .munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):focus,
 .munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):active {
-	width: 2rem;
-	min-width: 2rem;
-	height: 2rem;
-	min-height: 2rem;
+	width: 1.5rem;
+	min-width: 1.5rem;
+	height: 1.5rem;
+	min-height: 1.5rem;
 	padding: 0;
 	border-color: transparent;
 	background-color: var(--munipb-bg-soft);
@@ -904,11 +935,38 @@
 	display: none;
 }
 
-.munipb-directory .munipb-search input.munipb-search-input,
-.munipb-directory .munipb-search input.munipb-search-input:hover,
-.munipb-directory .munipb-search input.munipb-search-input:focus,
-.munipb-directory .munipb-search input.munipb-search-input:focus-visible,
-.munipb-directory .munipb-search input.munipb-search-input:active {
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box:hover,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box:focus,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box:focus-within,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box:active {
+	display: flex;
+	align-items: center;
+	width: 100%;
+	min-height: 2rem;
+	margin: 0;
+	padding: 0 0.35rem 0 0.75rem;
+	border: 1px solid var(--munipb-toolbar);
+	border-radius: 999px;
+	background: #fff;
+	background-color: #fff;
+	background-image: none;
+	box-shadow: none;
+	outline: none;
+}
+
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box:focus-within {
+	outline: 2px solid var(--munipb-toolbar);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px #fff;
+	border-color: var(--munipb-toolbar);
+}
+
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input:hover,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input:focus,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input:focus-visible,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input:active {
 	appearance: none;
 	-webkit-appearance: none;
 	box-sizing: border-box;
@@ -917,13 +975,15 @@
 	width: auto;
 	min-width: 0;
 	max-width: 100%;
-	height: auto;
-	min-height: 2.75rem;
-	max-height: none;
+	height: 1.75rem;
+	min-height: 0;
+	max-height: 1.75rem;
 	margin: 0;
-	padding: 0.65rem 0.25rem;
+	padding: 0 0.25rem;
 	float: none;
 	border: 0;
+	border-width: 0;
+	border-style: none;
 	border-radius: 0;
 	background: transparent;
 	background-color: transparent;
@@ -935,22 +995,32 @@
 	opacity: 1;
 	transform: none;
 	font-family: inherit;
-	font-size: 1rem;
+	font-size: 0.875rem;
 	font-weight: 400;
 	font-style: normal;
-	line-height: 1.4;
+	line-height: 1.75rem;
 	letter-spacing: normal;
 	text-transform: none;
 	text-decoration: none;
 	text-align: left;
 	text-indent: 0;
 	outline: none;
+	outline-offset: 0;
 }
 
-.munipb-directory .munipb-search input.munipb-search-input:focus-visible {
-	outline: 2px solid var(--munipb-toolbar);
-	outline-offset: 2px;
-	box-shadow: 0 0 0 4px #fff;
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input::placeholder {
+	color: #6b7c93;
+	opacity: 1;
+	font-size: 0.875rem;
+	line-height: 1.75rem;
+	text-overflow: clip;
+}
+
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input:focus,
+.munipb-directory .munipb-toolbar .munipb-search .munipb-search-box input.munipb-search-input:focus-visible {
+	outline: none;
+	box-shadow: none;
+	border: 0;
 	background-color: transparent;
 	color: var(--munipb-primary-dark);
 }
@@ -983,6 +1053,7 @@
 	text-transform: none;
 	text-decoration: none;
 	text-align: left;
+	white-space: nowrap;
 	cursor: pointer;
 }
 
@@ -990,10 +1061,10 @@
 	background-color: #eef2fb;
 }
 
-.munipb-directory .munipb-cats-panel input[type="checkbox"],
-.munipb-directory .munipb-cats-panel input[type="checkbox"]:hover,
-.munipb-directory .munipb-cats-panel input[type="checkbox"]:focus,
-.munipb-directory .munipb-cats-panel input[type="checkbox"]:active {
+.munipb-directory .munipb-toolbar .munipb-cats .munipb-cats-panel input[type="checkbox"],
+.munipb-directory .munipb-toolbar .munipb-cats .munipb-cats-panel input[type="checkbox"]:hover,
+.munipb-directory .munipb-toolbar .munipb-cats .munipb-cats-panel input[type="checkbox"]:focus,
+.munipb-directory .munipb-toolbar .munipb-cats .munipb-cats-panel input[type="checkbox"]:active {
 	appearance: auto;
 	-webkit-appearance: checkbox;
 	box-sizing: border-box;
@@ -1028,12 +1099,12 @@
 	vertical-align: middle;
 }
 
-.munipb-directory .munipb-cats-panel input[type="checkbox"]:focus:not(:focus-visible) {
+.munipb-directory .munipb-toolbar .munipb-cats .munipb-cats-panel input[type="checkbox"]:focus:not(:focus-visible) {
 	outline: none;
 	box-shadow: none;
 }
 
-.munipb-directory .munipb-cats-panel input[type="checkbox"]:focus-visible {
+.munipb-directory .munipb-toolbar .munipb-cats .munipb-cats-panel input[type="checkbox"]:focus-visible {
 	outline: 2px solid var(--munipb-toolbar);
 	outline-offset: 2px;
 	box-shadow: 0 0 0 4px #fff;
@@ -1071,26 +1142,28 @@
 	color: var(--munipb-primary);
 }
 
-.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(odd),
-.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(odd) > td,
-.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(odd):hover,
-.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(odd):hover > td,
-.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-odd,
-.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-odd > td,
-.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-odd:hover,
-.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-odd:hover > td {
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd),
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd) > td,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd):hover,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(odd):hover > td,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-odd,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-odd > td,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-odd:hover,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-odd:hover > td {
+	background: var(--munipb-row-odd);
 	background-color: var(--munipb-row-odd);
 	background-image: none;
 }
 
-.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(even),
-.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(even) > td,
-.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(even):hover,
-.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(even):hover > td,
-.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-even,
-.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-even > td,
-.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-even:hover,
-.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-even:hover > td {
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even),
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even) > td,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even):hover,
+.munipb-directory:not(.munipb-js) .munipb-content .munipb-table tbody tr.munipb-entry-row:nth-child(even):hover > td,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-even,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-even > td,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-even:hover,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row.munipb-row-even:hover > td {
+	background: var(--munipb-row-even);
 	background-color: var(--munipb-row-even);
 	background-image: none;
 }
@@ -1101,6 +1174,7 @@
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row:hover,
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row:hover > th,
 .munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row:hover > td {
+	background: var(--munipb-sub-bg);
 	background-color: var(--munipb-sub-bg);
 	background-image: none;
 	color: var(--munipb-primary-dark);

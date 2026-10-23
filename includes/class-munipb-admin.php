@@ -384,7 +384,7 @@ class Munipb_Admin {
 			'munipb_settings',
 			array(
 				'type'              => 'array',
-				'sanitize_callback' => array( __CLASS__, 'sanitize_settings' ),
+				'sanitize_callback' => 'munipb_sanitize_settings',
 				'default'           => munipb_default_settings(),
 			)
 		);
@@ -406,27 +406,6 @@ class Munipb_Admin {
 			'wp-color-picker',
 			'jQuery( function ( $ ) { $( ".munipb-color-picker" ).wpColorPicker(); } );'
 		);
-	}
-
-	/**
-	 * Sanitize settings: known booleans as 0/1, row colors as hex.
-	 *
-	 * @param mixed $input Raw input.
-	 * @return array<string, mixed>
-	 */
-	public static function sanitize_settings( $input ) {
-		$input    = is_array( $input ) ? $input : array();
-		$defaults = munipb_default_settings();
-		$out      = array();
-		foreach ( array( 'enable_rest', 'track_calls', 'delete_on_remove' ) as $key ) {
-			$out[ $key ] = empty( $input[ $key ] ) ? 0 : 1;
-		}
-		foreach ( array( 'row_odd', 'row_even' ) as $key ) {
-			$color       = munipb_sanitize_hex( isset( $input[ $key ] ) ? $input[ $key ] : '' );
-			$out[ $key ] = '' !== $color ? $color : $defaults[ $key ];
-		}
-		munipb_flush_cache();
-		return $out;
 	}
 
 	/**
@@ -474,7 +453,7 @@ class Munipb_Admin {
 					<tr>
 						<th scope="row"><label for="munipb-row-even"><?php esc_html_e( 'Even row color', 'municipal-phonebook' ); ?></label></th>
 						<td>
-							<input type="text" class="munipb-color-picker" id="munipb-row-even" name="munipb_settings[row_even]" value="<?php echo esc_attr( (string) $s['row_even'] ); ?>" data-default-color="#ffffff">
+							<input type="text" class="munipb-color-picker" id="munipb-row-even" name="munipb_settings[row_even]" value="<?php echo esc_attr( (string) $s['row_even'] ); ?>" data-default-color="#f3f6fc">
 							<p class="description"><?php esc_html_e( 'Background of the 2nd, 4th, 6th… visible contact row in each department.', 'municipal-phonebook' ); ?></p>
 						</td>
 					</tr>
@@ -483,7 +462,7 @@ class Munipb_Admin {
 			</form>
 			<h2><?php esc_html_e( 'Usage', 'municipal-phonebook' ); ?></h2>
 			<p><?php esc_html_e( 'Shortcode (works in the Elementor "Shortcode" widget and in WoodMart/HTML blocks):', 'municipal-phonebook' ); ?></p>
-			<p><code>[municipal_phonebook]</code> &nbsp; <code>[municipal_phonebook search="0" toc="0" departments="slug-1,slug-2" breakpoint="720" row_odd="#ffffff" row_even="#ffffff"]</code></p>
+			<p><code>[municipal_phonebook]</code> &nbsp; <code>[municipal_phonebook search="0" toc="0" departments="slug-1,slug-2" breakpoint="720" row_odd="#ffffff" row_even="#f3f6fc"]</code></p>
 			<p><?php esc_html_e( 'Elementor: add the "Municipal Phonebook" widget from the "Municipal Phonebook" category.', 'municipal-phonebook' ); ?></p>
 			<p><?php esc_html_e( 'Block editor: add the "Municipal Phonebook" block.', 'municipal-phonebook' ); ?></p>
 		</div>
