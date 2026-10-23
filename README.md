@@ -21,7 +21,7 @@ From 1.3.0 onward the plugin checks this repository's GitHub Releases. When a ne
 
 The check runs when WordPress itself checks for plugin updates. A successful lookup is cached for 12 hours. Errors and rate limits are cached for 6 hours and do not show an error to visitors. No token is required.
 
-Only `https://api.github.com/repos/digitalbtc81-oss/municipal-phonebook/releases/latest` is requested. The download is accepted only when the release asset is named `municipal-phonebook.zip` and its URL is `https://github.com/digitalbtc81-oss/municipal-phonebook/releases/download/vX.Y.Z/municipal-phonebook.zip`. The `Update URI` header points at this repository so WordPress does not fetch a same-named plugin from wordpress.org.
+Only `https://api.github.com/repos/digitalbtc81-oss/municipal-phonebook/releases/latest` is requested. The download is accepted only when the release asset is named `municipal-phonebook.zip` and its URL is `https://github.com/digitalbtc81-oss/municipal-phonebook/releases/download/vX.Y.Z/municipal-phonebook.zip`. The `Update URI` header points at this repository so WordPress does not fetch a same-named plugin from wordpress.org. There is no `Plugin URI` header, so the Plugins screen does not add a "Visit plugin site" link.
 
 Sites that still run 1.2.0 do not contain this updater. Install 1.3.0 once by uploading the zip. Later versions can then update from GitHub.
 

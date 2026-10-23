@@ -107,6 +107,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 		$this->style_table();
 		$this->style_links();
 		$this->style_search();
+		$this->custom_css_controls();
 	}
 
 	/**
@@ -447,6 +448,64 @@ class Munipb_Elementor_Widget extends Widget_Base {
 	}
 
 	/**
+	 * Custom CSS on the Advanced tab. `selector` is this widget's directory.
+	 *
+	 * @return void
+	 */
+	private function custom_css_controls() {
+		$this->start_controls_section(
+			'munipb_custom_css_section',
+			array(
+				'label' => __( 'Custom CSS', 'municipal-phonebook' ),
+				'tab'   => Controls_Manager::TAB_ADVANCED,
+			)
+		);
+		$this->add_control(
+			'custom_css',
+			array(
+				'label'       => __( 'Custom CSS', 'municipal-phonebook' ),
+				'description' => __( 'Use the selector keyword for this widget\'s directory. Example: selector .munipb-section-title { color: #c36; }', 'municipal-phonebook' ),
+				'type'        => Controls_Manager::CODE,
+				'language'    => 'css',
+				'rows'        => 12,
+				'label_block' => true,
+				'dynamic'     => array(
+					'active' => false,
+				),
+			)
+		);
+		$this->end_controls_section();
+	}
+
+	/**
+	 * Print this instance's CSS, scoped to its directory wrapper.
+	 *
+	 * @param array $settings Widget settings.
+	 * @return void
+	 */
+	private function print_instance_css( $settings ) {
+		$raw = isset( $settings['custom_css'] ) ? $settings['custom_css'] : '';
+		if ( ! is_scalar( $raw ) ) {
+			return;
+		}
+		$unique = method_exists( $this, 'get_unique_selector' ) ? (string) $this->get_unique_selector() : '';
+		if ( 1 !== preg_match( '/^\.elementor-element-[A-Za-z0-9_-]+$/', $unique ) ) {
+			$id     = sanitize_html_class( (string) $this->get_id() );
+			$unique = '' !== $id ? '.elementor-element-' . $id : '';
+		}
+		if ( '' === $unique ) {
+			return;
+		}
+		$css = munipb_scope_custom_css( (string) $raw, $unique . ' .munipb-directory' );
+		if ( '' === $css ) {
+			return;
+		}
+		echo '<style id="' . esc_attr( 'munipb-widget-css-' . sanitize_html_class( (string) $this->get_id() ) ) . '">';
+		echo $css; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- munipb_scope_custom_css() rejected markup.
+		echo '</style>';
+	}
+
+	/**
 	 * Render: validate every setting, then use the same renderer as the shortcode.
 	 *
 	 * @return void
@@ -467,6 +526,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 			'breakpoint'  => isset( $settings['breakpoint'] ) ? sanitize_key( (string) $settings['breakpoint'] ) : '720',
 		);
 
+		$this->print_instance_css( $settings );
 		echo Munipb_Frontend::render( $args ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- the renderer escapes every value.
 	}
 }

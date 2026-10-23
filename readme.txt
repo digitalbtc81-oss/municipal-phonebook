@@ -4,7 +4,7 @@ Tags: phonebook, directory, contacts, municipality, greek
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.0
+Stable tag: 1.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -68,7 +68,17 @@ No. It is never rendered, never exported, and never included in the REST API.
 
 Options and caches are always removed. Contacts and departments are removed only if you enable "Delete all phonebook data" in Phonebook → Settings.
 
+= Can I add my own CSS? =
+
+Yes. Phonebook → Settings → Custom CSS applies to every directory, and only on pages that show one. The Elementor widget has its own Custom CSS field on the Advanced tab: the word `selector` means that widget's directory (`.munipb-directory`). CSS with HTML, a style tag, unbalanced braces, or an unclosed comment is rejected.
+
 == Changelog ==
+
+= 1.4.1 =
+* Settings include a custom CSS editor with live CSSLint checks. Invalid CSS is rejected and the previous CSS is kept.
+* The Elementor widget has a Custom CSS control. The selector keyword targets that widget's directory.
+* Custom CSS is printed only when a directory is shown.
+* The Plugins screen no longer links to the plugin site. Updates still come from the GitHub Update URI.
 
 = 1.4.0 =
 * New toolbar above the directory: Categories (multi-select department filter), Search, and Clear. The table of contents list is no longer shown at the top.

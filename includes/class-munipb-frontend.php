@@ -31,6 +31,20 @@ class Munipb_Frontend {
 	private static $noscript_css = false;
 
 	/**
+	 * Whether custom CSS was already attached to the front-end stylesheet.
+	 *
+	 * @var bool
+	 */
+	private static $custom_css_added = false;
+
+	/**
+	 * CSS to print in the footer when the stylesheet tag was already sent.
+	 *
+	 * @var string
+	 */
+	private static $late_custom_css = '';
+
+	/**
 	 * Hooks.
 	 *
 	 * @return void
@@ -118,9 +132,23 @@ class Munipb_Frontend {
 			return;
 		}
 		$post = get_post();
-		if ( $post && ( has_shortcode( $post->post_content, self::SHORTCODE ) || has_block( 'municipal-phonebook/directory', $post ) ) ) {
+		if ( $post && self::post_has_directory( $post ) ) {
 			self::enqueue();
 		}
+	}
+
+	/**
+	 * Whether a post renders the directory.
+	 *
+	 * @param WP_Post $post Post.
+	 * @return bool
+	 */
+	public static function post_has_directory( $post ) {
+		if ( has_shortcode( $post->post_content, self::SHORTCODE ) || has_block( 'municipal-phonebook/directory', $post ) ) {
+			return true;
+		}
+		$data = get_post_meta( $post->ID, '_elementor_data', true );
+		return is_string( $data ) && 1 === preg_match( '/"widgetType"\s*:\s*"municipal-phonebook"/', $data );
 	}
 
 	/**
@@ -129,8 +157,52 @@ class Munipb_Frontend {
 	 * @return void
 	 */
 	public static function enqueue() {
+		self::add_custom_css();
 		wp_enqueue_style( self::HANDLE );
 		wp_enqueue_script( self::HANDLE );
+	}
+
+	/**
+	 * Attach the saved stylesheet to the front-end handle.
+	 *
+	 * Called only from enqueue(), which runs when a directory is rendered.
+	 * The value is validated again so a tampered option cannot print markup.
+	 *
+	 * @return void
+	 */
+	private static function add_custom_css() {
+		if ( self::$custom_css_added ) {
+			return;
+		}
+		self::$custom_css_added = true;
+
+		$settings = munipb_get_settings();
+		$css      = munipb_prepare_custom_css( isset( $settings['custom_css'] ) ? $settings['custom_css'] : '' );
+		if ( '' === $css ) {
+			return;
+		}
+
+		wp_add_inline_style( self::HANDLE, $css );
+		if ( wp_style_is( self::HANDLE, 'done' ) ) {
+			self::$late_custom_css = $css;
+			add_action( 'wp_footer', array( __CLASS__, 'print_late_custom_css' ), 20 );
+		}
+	}
+
+	/**
+	 * Print custom CSS when the stylesheet tag was already sent in the head.
+	 *
+	 * @return void
+	 */
+	public static function print_late_custom_css() {
+		$css                   = self::$late_custom_css;
+		self::$late_custom_css = '';
+		if ( '' === $css ) {
+			return;
+		}
+		echo '<style id="munipb-custom-css">';
+		echo $css; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- munipb_prepare_custom_css() rejected markup.
+		echo "</style>\n";
 	}
 
 	/**
