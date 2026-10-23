@@ -19,7 +19,7 @@ Searchable telephone directory for municipalities and organisations. Visitors br
 
 From 1.3.0 onward the plugin checks this repository's GitHub Releases. When a newer release exists, **Plugins** and **Dashboard → Updates** show that a new version is available. Update installs with one click, and **View details** shows the release notes.
 
-The check runs when WordPress itself checks for plugin updates. A successful lookup is cached for 12 hours. Errors and rate limits are cached for 6 hours and do not show an error to visitors. No token is required.
+The check runs when WordPress itself checks for plugin updates. A successful lookup is cached for 3 hours. Errors and rate limits are cached for 1 hour and do not show an error to visitors. Dashboard → Updates → Check again, and the "Check for updates" link on the Plugins row, clear that cache. No token is required.
 
 Only `https://api.github.com/repos/digitalbtc81-oss/municipal-phonebook/releases/latest` is requested. The download is accepted only when the release asset is named `municipal-phonebook.zip` and its URL is `https://github.com/digitalbtc81-oss/municipal-phonebook/releases/download/vX.Y.Z/municipal-phonebook.zip`. The `Update URI` header points at this repository so WordPress does not fetch a same-named plugin from wordpress.org. There is no `Plugin URI` header, so the Plugins screen does not add a "Visit plugin site" link.
 

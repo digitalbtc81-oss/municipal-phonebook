@@ -4,7 +4,7 @@ Tags: phonebook, directory, contacts, municipality, greek
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.1
+Stable tag: 1.4.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -73,6 +73,11 @@ Options and caches are always removed. Contacts and departments are removed only
 Yes. Phonebook → Settings → Custom CSS applies to every directory, and only on pages that show one. The Elementor widget has its own Custom CSS field on the Advanced tab: the word `selector` means that widget's directory (`.munipb-directory`). CSS with HTML, a style tag, unbalanced braces, or an unclosed comment is rejected.
 
 == Changelog ==
+
+= 1.4.2 =
+* Update checks stay cached for 3 hours. A failed lookup is cached for 1 hour.
+* Dashboard → Updates → Check again clears that cache, as does clearing the plugin update cache.
+* The Plugins row has "Check for updates". It checks GitHub immediately and reports whether a new version is available.
 
 = 1.4.1 =
 * Settings include a custom CSS editor with live CSSLint checks. Invalid CSS is rejected and the previous CSS is kept.

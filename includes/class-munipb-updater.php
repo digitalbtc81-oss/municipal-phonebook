@@ -24,8 +24,10 @@ class Munipb_Updater {
 	const PACKAGE_NAME = 'municipal-phonebook.zip';
 	const TRANSIENT    = 'munipb_github_release';
 	const TESTED_WP    = '7.1';
-	const SUCCESS_TTL  = 12 * HOUR_IN_SECONDS;
-	const FAILURE_TTL  = 6 * HOUR_IN_SECONDS;
+	const SUCCESS_TTL  = 3 * HOUR_IN_SECONDS;
+	const FAILURE_TTL  = 1 * HOUR_IN_SECONDS;
+	const NOTICE_KEY   = 'munipb_update_notice_';
+	const CHECK_ACTION = 'munipb_check_updates';
 	const BODY_LIMIT   = 500000;
 	const NOTES_LIMIT  = 20000;
 
@@ -39,6 +41,13 @@ class Munipb_Updater {
 		add_filter( 'update_plugins_github.com', array( __CLASS__, 'filter_update' ), 10, 4 ); // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHookname
 		add_filter( 'plugins_api', array( __CLASS__, 'plugin_information' ), 20, 3 );
 		add_filter( 'upgrader_source_selection', array( __CLASS__, 'select_source' ), 10, 4 );
+
+		// Before wp_update_plugins() on this screen (priority 10), so a fresh lookup is used.
+		add_action( 'load-update-core.php', array( __CLASS__, 'maybe_forget_on_force_check' ), 1 );
+		add_action( 'delete_site_transient_update_plugins', array( __CLASS__, 'forget' ) );
+		add_filter( 'plugin_row_meta', array( __CLASS__, 'plugin_row_meta' ), 10, 2 );
+		add_action( 'admin_post_' . self::CHECK_ACTION, array( __CLASS__, 'handle_check_updates' ) );
+		add_action( 'admin_notices', array( __CLASS__, 'check_updates_notice' ) );
 	}
 
 	/**
@@ -48,6 +57,130 @@ class Munipb_Updater {
 	 */
 	public static function forget() {
 		delete_site_transient( self::TRANSIENT );
+	}
+
+	/**
+	 * Drop the cached lookup when Dashboard → Updates → Check again is opened.
+	 *
+	 * Core's force-check link has no nonce. The handler only deletes caches, and
+	 * only for someone who can update plugins. The plugin-update transient is
+	 * cleared too: on this screen WordPress otherwise skips a new plugin check
+	 * for one minute, which would keep hiding a release we just uncached.
+	 *
+	 * @return void
+	 */
+	public static function maybe_forget_on_force_check() {
+		// phpcs:ignore WordPress.Security.NonceVerification.Recommended -- core force-check has no nonce; capability is checked and the action only clears caches.
+		if ( empty( $_GET['force-check'] ) || ! current_user_can( 'update_plugins' ) ) {
+			return;
+		}
+		self::forget();
+		delete_site_transient( 'update_plugins' );
+	}
+
+	/**
+	 * Plugins-row link to check GitHub immediately.
+	 *
+	 * @param string[] $links Existing meta links.
+	 * @param string   $file  Plugin basename.
+	 * @return string[]
+	 */
+	public static function plugin_row_meta( $links, $file ) {
+		if ( plugin_basename( MUNIPB_FILE ) !== $file || ! current_user_can( 'update_plugins' ) ) {
+			return $links;
+		}
+		$url     = wp_nonce_url( admin_url( 'admin-post.php?action=' . self::CHECK_ACTION ), self::CHECK_ACTION );
+		$links[] = '<a href="' . esc_url( $url ) . '">' . esc_html__( 'Check for updates', 'municipal-phonebook' ) . '</a>';
+		return $links;
+	}
+
+	/**
+	 * Clear caches, look up the latest release, and return to the Plugins screen.
+	 *
+	 * @return void
+	 */
+	public static function handle_check_updates() {
+		if ( ! current_user_can( 'update_plugins' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'municipal-phonebook' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( self::CHECK_ACTION );
+
+		self::forget();
+		delete_site_transient( 'update_plugins' );
+
+		$release = self::refresh_release();
+		$state   = 'error';
+		$version = '';
+		if ( is_array( $release ) && preg_match( '/^\d+\.\d+\.\d+$/', $release['version'] ) ) {
+			if ( version_compare( $release['version'], MUNIPB_VERSION, '>' ) ) {
+				$state   = 'available';
+				$version = $release['version'];
+			} else {
+				$state = 'current';
+			}
+		}
+
+		set_transient(
+			self::NOTICE_KEY . get_current_user_id(),
+			array(
+				'state'   => $state,
+				'version' => $version,
+			),
+			MINUTE_IN_SECONDS
+		);
+
+		if ( ! function_exists( 'wp_update_plugins' ) ) {
+			require_once ABSPATH . 'wp-includes/update.php';
+		}
+		wp_update_plugins();
+
+		wp_safe_redirect( admin_url( 'plugins.php' ) );
+		exit;
+	}
+
+	/**
+	 * One-time result of the plugins-row update check.
+	 *
+	 * @return void
+	 */
+	public static function check_updates_notice() {
+		if ( ! current_user_can( 'update_plugins' ) || ! function_exists( 'get_current_screen' ) ) {
+			return;
+		}
+		$screen = get_current_screen();
+		if ( ! $screen || 'plugins' !== $screen->id ) {
+			return;
+		}
+
+		$key    = self::NOTICE_KEY . get_current_user_id();
+		$notice = get_transient( $key );
+		if ( ! is_array( $notice ) || empty( $notice['state'] ) ) {
+			return;
+		}
+		delete_transient( $key );
+
+		$state = (string) $notice['state'];
+		$class = 'notice-info';
+		if ( 'available' === $state ) {
+			$version = isset( $notice['version'] ) ? (string) $notice['version'] : '';
+			if ( ! preg_match( '/^\d+\.\d+\.\d+$/', $version ) ) {
+				return;
+			}
+			$message = sprintf(
+				/* translators: %s: version number, such as 1.4.2. */
+				__( 'Version %s is available.', 'municipal-phonebook' ),
+				$version
+			);
+			$class = 'notice-warning';
+		} elseif ( 'current' === $state ) {
+			$message = __( 'You are up to date.', 'municipal-phonebook' );
+			$class   = 'notice-success';
+		} else {
+			$message = __( 'Could not check for updates. Please try again later.', 'municipal-phonebook' );
+			$class   = 'notice-error';
+		}
+
+		echo '<div class="notice ' . esc_attr( $class ) . ' is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
 	}
 
 	/**
