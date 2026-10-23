@@ -159,6 +159,22 @@ class Munipb_Elementor_Widget extends Widget_Base {
 					'720'    => '720px',
 					'960'    => '960px',
 					'always' => __( 'Always cards', 'municipal-phonebook' ),
+					'custom' => __( 'Custom', 'municipal-phonebook' ),
+				),
+			)
+		);
+		$this->add_control(
+			'breakpoint_custom',
+			array(
+				'label'       => __( 'Custom width (px)', 'municipal-phonebook' ),
+				'description' => __( '0 keeps the table. Cards appear when the directory is this wide or narrower.', 'municipal-phonebook' ),
+				'type'        => Controls_Manager::NUMBER,
+				'min'         => 0,
+				'max'         => 2400,
+				'step'        => 1,
+				'default'     => 1100,
+				'condition'   => array(
+					'breakpoint' => 'custom',
 				),
 			)
 		);
@@ -520,11 +536,17 @@ class Munipb_Elementor_Widget extends Widget_Base {
 			$departments = array_map( 'strval', array_filter( $settings['departments'], 'is_scalar' ) );
 		}
 
+		$breakpoint = isset( $settings['breakpoint'] ) ? sanitize_key( (string) $settings['breakpoint'] ) : '720';
+		if ( 'custom' === $breakpoint ) {
+			$custom     = isset( $settings['breakpoint_custom'] ) ? $settings['breakpoint_custom'] : 0;
+			$breakpoint = (string) absint( $custom );
+		}
+
 		$args = array(
 			'search'      => isset( $settings['show_search'] ) && 'yes' === $settings['show_search'],
 			'toc'         => isset( $settings['show_toc'] ) && 'yes' === $settings['show_toc'],
 			'departments' => $departments,
-			'breakpoint'  => isset( $settings['breakpoint'] ) ? sanitize_key( (string) $settings['breakpoint'] ) : '720',
+			'breakpoint'  => $breakpoint,
 		);
 
 		$this->print_instance_css( $settings );

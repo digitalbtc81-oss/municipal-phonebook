@@ -491,6 +491,7 @@
  * Card layout (mobile, sidebars, narrow Elementor columns): the same table becomes cards.
  * Single markup, no duplicated content. Container queries react to the widget width;
  * the breakpoint is chosen per instance with a .munipb-bp-* class (never|480|720|960|always).
+ * A custom width prints its own @container rule for .munipb-bp-custom.
  */
 .munipb-bp-always .munipb-table thead {
 	position: absolute;

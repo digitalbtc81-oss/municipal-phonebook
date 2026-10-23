@@ -15,6 +15,7 @@ class Munipb_Frontend {
 	const SHORTCODE   = 'municipal_phonebook';
 	const HANDLE      = 'munipb-frontend';
 	const BREAKPOINTS = array( 'never', '480', '720', '960', 'always' );
+	const CARDS_MAX   = 2400;
 
 	/**
 	 * Instance counter for unique ids when used more than once per page.
@@ -264,12 +265,69 @@ class Munipb_Frontend {
 	/**
 	 * Validate the card breakpoint.
 	 *
+	 * Presets stay as they are. A whole number from 1 to 2400 is a custom
+	 * width in pixels. 0 means never switch to cards.
+	 *
 	 * @param mixed $value Raw value.
 	 * @return string
 	 */
 	public static function sanitize_breakpoint( $value ) {
-		$value = (string) $value;
-		return in_array( $value, self::BREAKPOINTS, true ) ? $value : '720';
+		$value = is_scalar( $value ) ? trim( (string) $value ) : '';
+		if ( in_array( $value, self::BREAKPOINTS, true ) ) {
+			return $value;
+		}
+		if ( 1 === preg_match( '/^[0-9]+$/', $value ) ) {
+			$px = absint( $value );
+			if ( $px > self::CARDS_MAX ) {
+				$px = self::CARDS_MAX;
+			}
+			if ( $px < 1 ) {
+				return 'never';
+			}
+			return (string) $px;
+		}
+		return '720';
+	}
+
+	/**
+	 * Inline container query for one custom card width.
+	 *
+	 * Container conditions cannot read a CSS variable, so the pixel value is
+	 * written into the rule. The id and the width are integers produced here.
+	 *
+	 * @param string $id Element id, such as munipb-1.
+	 * @param int    $px Width in pixels.
+	 * @return void
+	 */
+	private static function print_custom_cards_css( $id, $px ) {
+		$id = sanitize_html_class( $id );
+		$px = (int) $px;
+		if ( '' === $id || $px < 1 || $px > self::CARDS_MAX ) {
+			return;
+		}
+		$s     = '#' . $id . '.munipb-bp-custom';
+		$rules = array(
+			$s . ' .munipb-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}',
+			$s . ' .munipb-table,' . $s . ' .munipb-table tbody,' . $s . ' .munipb-table tr,' . $s . ' .munipb-table th,' . $s . ' .munipb-table td{display:block;width:100%}',
+			$s . ' .munipb-table{border:0;background:transparent}',
+			$s . ' .munipb-table tr{margin:0 0 .75rem;background:#fff;border:1px solid var(--munipb-border);border-left:4px solid var(--munipb-primary);border-radius:var(--munipb-radius);overflow:hidden}',
+			$s . ' .munipb-table td,' . $s . ' .munipb-table th{padding:.35rem 1rem;border:0}',
+			$s . ' .munipb-table .munipb-col-name{padding-top:.8rem;font-size:1.05rem}',
+			$s . ' .munipb-table .munipb-col-role{color:#555}',
+			$s . ' .munipb-table td:last-child{padding-bottom:.8rem}',
+			$s . ' .munipb-table td:empty{display:none}',
+			$s . ' .munipb-table .munipb-phone-group::before{content:"\\1F4DE\\00a0"}',
+			$s . ' .munipb-email{white-space:normal;overflow-wrap:anywhere}',
+			$s . ' .munipb-table .munipb-col-email::before{content:"\\2709\\FE0F\\00a0"}',
+			$s . ' .munipb-col-phone{white-space:normal}',
+			$s . ' .munipb-subdept-row{border-left-color:var(--munipb-accent)!important}',
+			$s . ' .munipb-table tr.munipb-subdept-band{margin-bottom:.35rem;border-left-color:var(--munipb-sub-header);background:var(--munipb-sub-header);box-shadow:none}',
+			$s . ' .munipb-table td.munipb-col-custom[data-label]::before{content:attr(data-label);display:block;margin-bottom:.1rem;font-size:.75rem;font-weight:700;letter-spacing:.02em;text-transform:uppercase;color:var(--munipb-primary-dark)}',
+			$s . ' .munipb-content .munipb-table tbody tr.munipb-entry-row>td,' . $s . ' .munipb-content .munipb-table tbody tr.munipb-subdept-row>td,' . $s . ' .munipb-content .munipb-table tbody tr.munipb-subdept-row>th{border:0}',
+			$s . ' .munipb-section>h2.munipb-section-title{margin-block-end:.75rem;border-radius:var(--munipb-radius)}',
+		);
+		$css   = '@container munipb (max-width:' . $px . 'px){' . implode( '', $rules ) . '}';
+		echo '<style id="' . esc_attr( $id . '-cards' ) . '">' . $css . '</style>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- id and width are integers; the rule text is fixed.
 	}
 
 	/**
@@ -377,8 +435,14 @@ class Munipb_Frontend {
 		$show_cats = $opts['toc'] && count( $toc_tree ) > 0;
 		$show_bar  = $opts['search'] || $show_cats;
 		$id        = 'munipb-' . $inst;
-		$classes   = 'munipb-directory munipb-bp-' . $opts['breakpoint'];
-		$row_vars  = array();
+		$cards_px  = 0;
+		if ( in_array( $opts['breakpoint'], self::BREAKPOINTS, true ) ) {
+			$classes = 'munipb-directory munipb-bp-' . $opts['breakpoint'];
+		} else {
+			$classes  = 'munipb-directory munipb-bp-custom';
+			$cards_px = (int) $opts['breakpoint'];
+		}
+		$row_vars = array();
 		if ( '' !== $opts['row_odd'] ) {
 			$row_vars[] = '--munipb-row-odd:' . $opts['row_odd'];
 		}
@@ -391,9 +455,15 @@ class Munipb_Frontend {
 			self::$noscript_css = true;
 			echo '<noscript><style>.munipb-directory .munipb-search{display:flex !important;flex:1 1 12rem;min-width:0;margin:0}.munipb-directory .munipb-search-toggle{display:none !important}</style></noscript>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static no-JS fallback.
 		}
+		if ( $cards_px > 0 ) {
+			self::print_custom_cards_css( $id, $cards_px );
+		}
 		?>
 		<div class="<?php echo esc_attr( $classes ); ?>" id="<?php echo esc_attr( $id ); ?>" data-munipb-directory
 			data-munipb-instance="<?php echo esc_attr( (string) $inst ); ?>"
+			<?php if ( $cards_px > 0 ) : ?>
+				data-munipb-cards="<?php echo esc_attr( (string) $cards_px ); ?>"
+			<?php endif; ?>
 			<?php if ( $words ) : ?>
 				data-munipb-server-query="1"
 			<?php endif; ?>
