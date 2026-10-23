@@ -4,7 +4,7 @@ Tags: phonebook, directory, contacts, municipality, greek
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.3.0
+Stable tag: 1.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Municipal Phonebook lets you publish an organisation's telephone directory (depa
 * Contacts as a private custom post type: name, role, one or more phone groups, email, and an internal note that is never published.
 * Live search-as-you-type with keyboard navigation (arrow keys, Enter, Escape), result highlighting and jump-to-row.
 * Accent-insensitive search for Greek (τόνοι, διαλυτικά, final sigma) and phone search that ignores spaces and dashes.
-* Collapsible table of contents with active-section highlighting.
+* Category filter: a "Categories" menu filters the directory by department. The old contents list is no longer shown above the entries.
 * Responsive: the table becomes cards on mobile. Click-to-call (tel:) and mailto links; emails are obfuscated against harvesters.
 * Works without JavaScript (server-side search fallback).
 * Shortcode `[municipal_phonebook]` (use it in the Elementor "Shortcode" widget, WoodMart HTML blocks, classic editor) a "Municipal Phonebook" block and a native Elementor widget ("Municipal Phonebook" category) with content and style controls.
@@ -40,12 +40,13 @@ Municipal Phonebook lets you publish an organisation's telephone directory (depa
 
 = Which shortcode attributes are available? =
 
-* `search="0"` hides the search box (default `1`).
-* `toc="0"` hides the table of contents (default `1`).
+* `search="0"` hides the search button (default `1`).
+* `toc="0"` hides the Categories filter (default `1`).
 * `departments="slug-1,slug-2"` shows only these top-level departments.
 * `breakpoint="720"` container width under which rows turn into cards: `never`, `480`, `720`, `960` or `always`.
+* `row_odd="#ffffff"` and `row_even="#f3f6fc"` override the odd and even contact-row colors for this directory. Invalid values are ignored. The same colors can be set for every directory under Phonebook → Settings. Even rows default to a light tint so the stripes are visible before you pick colors.
 
-Several directories can be placed on the same page; each one has its own search and contents.
+Several directories can be placed on the same page; each one has its own search and category filter.
 
 = Is the Elementor widget required? =
 
@@ -68,6 +69,13 @@ No. It is never rendered, never exported, and never included in the REST API.
 Options and caches are always removed. Contacts and departments are removed only if you enable "Delete all phonebook data" in Phonebook → Settings.
 
 == Changelog ==
+
+= 1.4.0 =
+* New toolbar above the directory: Categories (multi-select department filter), Search, and Clear. The table of contents list is no longer shown at the top.
+* `toc` now shows or hides the Categories menu. `search` shows or hides the Search button. Department headings stay in the list, and empty departments hide after a filter or search.
+* Toolbar controls keep their own border, color, and focus ring so theme button styles (Hello Elementor, WoodMart) do not restyle them.
+* Odd and even contact rows can be colored from Settings, the shortcode (`row_odd`, `row_even`), the block, or the Elementor style tab. Even rows default to #f3f6fc. Stripes follow the rows still visible after a filter or search, including the card layout. Theme table colors do not paint over them.
+* Search opens inside the toolbar, between Categories and Clear. On a narrow directory it wraps to its own row inside the same band.
 
 = 1.3.0 =
 * GitHub release updates. When a newer GitHub Release exists, WordPress shows that a new version is available and can install it in one click. "View details" shows the release notes.

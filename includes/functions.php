@@ -17,7 +17,20 @@ function munipb_default_settings() {
 		'enable_rest'      => 0,
 		'track_calls'      => 0,
 		'delete_on_remove' => 0,
+		'row_odd'          => '#ffffff',
+		'row_even'         => '#f3f6fc',
 	);
+}
+
+/**
+ * Sanitize a hex color. Empty or invalid values become an empty string.
+ *
+ * @param mixed $color Raw color.
+ * @return string #rgb or #rrggbb, or ''.
+ */
+function munipb_sanitize_hex( $color ) {
+	$color = sanitize_hex_color( is_scalar( $color ) ? (string) $color : '' );
+	return is_string( $color ) ? $color : '';
 }
 
 /**
@@ -31,6 +44,40 @@ function munipb_get_settings() {
 		$saved = array();
 	}
 	return wp_parse_args( $saved, munipb_default_settings() );
+}
+
+/**
+ * Sanitize the settings option.
+ *
+ * Booleans come from the submitted array (an unchecked box is 0). Row colors
+ * that are absent — a save that only touches another key — stay as stored.
+ * An empty or invalid color that was submitted falls back to the default.
+ *
+ * @param mixed $input Raw input.
+ * @return array<string, mixed>
+ */
+function munipb_sanitize_settings( $input ) {
+	$input    = is_array( $input ) ? $input : array();
+	$defaults = munipb_default_settings();
+	$existing = get_option( 'munipb_settings', array() );
+	if ( ! is_array( $existing ) ) {
+		$existing = array();
+	}
+	$out = array();
+	foreach ( array( 'enable_rest', 'track_calls', 'delete_on_remove' ) as $key ) {
+		$out[ $key ] = empty( $input[ $key ] ) ? 0 : 1;
+	}
+	foreach ( array( 'row_odd', 'row_even' ) as $key ) {
+		if ( ! array_key_exists( $key, $input ) ) {
+			$kept        = munipb_sanitize_hex( isset( $existing[ $key ] ) ? $existing[ $key ] : '' );
+			$out[ $key ] = '' !== $kept ? $kept : $defaults[ $key ];
+			continue;
+		}
+		$color       = munipb_sanitize_hex( $input[ $key ] );
+		$out[ $key ] = '' !== $color ? $color : $defaults[ $key ];
+	}
+	munipb_flush_cache();
+	return $out;
 }
 
 /**

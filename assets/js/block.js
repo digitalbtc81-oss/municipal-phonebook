@@ -12,6 +12,7 @@
 	var ToggleControl = wp.components.ToggleControl;
 	var TextControl = wp.components.TextControl;
 	var SelectControl = wp.components.SelectControl;
+	var PanelColorSettings = wp.blockEditor.PanelColorSettings;
 	var ServerSideRender = wp.serverSideRender;
 
 	wp.blocks.registerBlockType( 'municipal-phonebook/directory', {
@@ -34,7 +35,7 @@
 							}
 						} ),
 						el( ToggleControl, {
-							label: __( 'Show table of contents', 'municipal-phonebook' ),
+							label: __( 'Show categories', 'municipal-phonebook' ),
 							checked: !! a.showToc,
 							onChange: function ( v ) {
 								props.setAttributes( { showToc: v } );
@@ -61,7 +62,26 @@
 								props.setAttributes( { departments: v } );
 							}
 						} )
-					)
+					),
+					el( PanelColorSettings, {
+						title: __( 'Row colors', 'municipal-phonebook' ),
+						colorSettings: [
+							{
+								value: a.rowOdd || undefined,
+								label: __( 'Odd row color', 'municipal-phonebook' ),
+								onChange: function ( v ) {
+									props.setAttributes( { rowOdd: v || '' } );
+								}
+							},
+							{
+								value: a.rowEven || undefined,
+								label: __( 'Even row color', 'municipal-phonebook' ),
+								onChange: function ( v ) {
+									props.setAttributes( { rowEven: v || '' } );
+								}
+							}
+						]
+					} )
 				),
 				el( ServerSideRender, { block: 'municipal-phonebook/directory', attributes: a } )
 			);

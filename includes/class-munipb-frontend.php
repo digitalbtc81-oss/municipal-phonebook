@@ -24,6 +24,13 @@ class Munipb_Frontend {
 	private static $instance = 0;
 
 	/**
+	 * Whether the no-JS search reveal has already been printed.
+	 *
+	 * @var bool
+	 */
+	private static $noscript_css = false;
+
+	/**
 	 * Hooks.
 	 *
 	 * @return void
@@ -54,7 +61,14 @@ class Munipb_Frontend {
 		);
 
 		$settings = munipb_get_settings();
-		$config   = array(
+		$defaults = munipb_default_settings();
+		$odd      = munipb_sanitize_hex( isset( $settings['row_odd'] ) ? $settings['row_odd'] : '' );
+		$even     = munipb_sanitize_hex( isset( $settings['row_even'] ) ? $settings['row_even'] : '' );
+		wp_add_inline_style(
+			self::HANDLE,
+			'.munipb-directory{--munipb-row-odd:' . ( '' !== $odd ? $odd : $defaults['row_odd'] ) . ';--munipb-row-even:' . ( '' !== $even ? $even : $defaults['row_even'] ) . ';}'
+		);
+		$config = array(
 			'minChars'   => 2,
 			'maxResults' => 10,
 			'trackCalls' => (bool) $settings['track_calls'],
@@ -64,6 +78,8 @@ class Munipb_Frontend {
 				/* translators: %d: number of results. */
 				'results'   => __( '%d results. Use the arrow keys to navigate.', 'municipal-phonebook' ),
 				'category'  => __( 'Department', 'municipal-phonebook' ),
+				/* translators: %d: number of selected departments. */
+				'selected'  => __( '%d selected', 'municipal-phonebook' ),
 			),
 		);
 		wp_add_inline_script( self::HANDLE, 'window.munipbConfig = ' . wp_json_encode( $config ) . ';', 'before' );
@@ -131,6 +147,8 @@ class Munipb_Frontend {
 				'toc'         => ! empty( $attributes['showToc'] ) ? '1' : '0',
 				'departments' => isset( $attributes['departments'] ) ? (string) $attributes['departments'] : '',
 				'breakpoint'  => isset( $attributes['breakpoint'] ) ? (string) $attributes['breakpoint'] : '720',
+				'row_odd'     => isset( $attributes['rowOdd'] ) ? (string) $attributes['rowOdd'] : '',
+				'row_even'    => isset( $attributes['rowEven'] ) ? (string) $attributes['rowEven'] : '',
 			)
 		);
 	}
@@ -148,6 +166,8 @@ class Munipb_Frontend {
 				'toc'         => '1',
 				'departments' => '',
 				'breakpoint'  => '720',
+				'row_odd'     => '',
+				'row_even'    => '',
 			),
 			$atts,
 			self::SHORTCODE
@@ -183,7 +203,7 @@ class Munipb_Frontend {
 	 * Normalize attributes from any source (shortcode, block, Elementor, REST).
 	 *
 	 * @param array $atts Raw attributes.
-	 * @return array{search:bool, toc:bool, slugs:string[], breakpoint:string}
+	 * @return array{search:bool, toc:bool, slugs:string[], breakpoint:string, row_odd:string, row_even:string}
 	 */
 	public static function normalize_atts( $atts ) {
 		$atts = is_array( $atts ) ? $atts : array();
@@ -192,6 +212,8 @@ class Munipb_Frontend {
 			'toc'        => self::truthy( isset( $atts['toc'] ) ? $atts['toc'] : '1' ),
 			'slugs'      => munipb_parse_department_slugs( isset( $atts['departments'] ) ? $atts['departments'] : '' ),
 			'breakpoint' => self::sanitize_breakpoint( isset( $atts['breakpoint'] ) ? $atts['breakpoint'] : '720' ),
+			'row_odd'    => munipb_sanitize_hex( isset( $atts['row_odd'] ) ? $atts['row_odd'] : '' ),
+			'row_even'   => munipb_sanitize_hex( isset( $atts['row_even'] ) ? $atts['row_even'] : '' ),
 		);
 	}
 
@@ -256,8 +278,8 @@ class Munipb_Frontend {
 			$words = array_values( array_filter( preg_split( '/\s+/u', munipb_normalize_text( $query ) ) ) );
 		}
 
-		// Sections without any contact or sub-department are never rendered, so keep them out of the contents.
-		$toc_tree = array_values(
+		// Sections without any contact or sub-department are never rendered, so keep them out of the menu.
+		$toc_tree  = array_values(
 			array_filter(
 				$tree,
 				static function ( $section ) {
@@ -265,29 +287,87 @@ class Munipb_Frontend {
 				}
 			)
 		);
-		$show_toc = $opts['toc'] && empty( $words ) && count( $toc_tree ) > 1;
-		$id       = 'munipb-' . $inst;
-		$classes  = 'munipb-directory munipb-bp-' . $opts['breakpoint'];
+		$show_cats = $opts['toc'] && count( $toc_tree ) > 0;
+		$show_bar  = $opts['search'] || $show_cats;
+		$id        = 'munipb-' . $inst;
+		$classes   = 'munipb-directory munipb-bp-' . $opts['breakpoint'];
+		$row_vars  = array();
+		if ( '' !== $opts['row_odd'] ) {
+			$row_vars[] = '--munipb-row-odd:' . $opts['row_odd'];
+		}
+		if ( '' !== $opts['row_even'] ) {
+			$row_vars[] = '--munipb-row-even:' . $opts['row_even'];
+		}
 
 		ob_start();
+		if ( ! self::$noscript_css ) {
+			self::$noscript_css = true;
+			echo '<noscript><style>.munipb-directory .munipb-search{display:flex !important;flex:1 1 12rem;min-width:0;margin:0}.munipb-directory .munipb-search-toggle{display:none !important}</style></noscript>'; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static no-JS fallback.
+		}
 		?>
 		<div class="<?php echo esc_attr( $classes ); ?>" id="<?php echo esc_attr( $id ); ?>" data-munipb-directory
 			data-munipb-instance="<?php echo esc_attr( (string) $inst ); ?>"
+			<?php if ( $words ) : ?>
+				data-munipb-server-query="1"
+			<?php endif; ?>
+			<?php if ( $row_vars ) : ?>
+				style="<?php echo esc_attr( implode( ';', $row_vars ) ); ?>"
+			<?php endif; ?>
 		>
-			<?php if ( $opts['search'] ) : ?>
-				<form class="munipb-search" role="search" method="get" action="<?php echo esc_url( '#' . $id ); ?>">
-					<label class="munipb-sr-only" for="<?php echo esc_attr( $id . '-q' ); ?>"><?php esc_html_e( 'Search the phonebook', 'municipal-phonebook' ); ?></label>
-					<div class="munipb-search-box">
-						<svg class="munipb-search-icon" aria-hidden="true" focusable="false" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-						<input type="search" class="munipb-search-input" id="<?php echo esc_attr( $id . '-q' ); ?>" name="munipb_q" value="<?php echo esc_attr( $query ); ?>" maxlength="100"
-							placeholder="<?php esc_attr_e( 'Search name, role, department, phone…', 'municipal-phonebook' ); ?>"
-							role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="<?php echo esc_attr( $id . '-results' ); ?>" autocomplete="off">
-						<button type="button" class="munipb-search-clear" hidden aria-label="<?php esc_attr_e( 'Clear search', 'municipal-phonebook' ); ?>">&times;</button>
-						<button type="submit" class="munipb-search-submit"><?php esc_html_e( 'Search', 'municipal-phonebook' ); ?></button>
+			<?php if ( $show_bar ) : ?>
+				<div class="munipb-toolbar" role="toolbar" aria-label="<?php esc_attr_e( 'Phonebook tools', 'municipal-phonebook' ); ?>">
+					<?php if ( $show_cats ) : ?>
+						<div class="munipb-cats">
+							<button type="button" class="munipb-tool munipb-pill munipb-cats-toggle" aria-expanded="false" aria-controls="<?php echo esc_attr( $id . '-cats' ); ?>">
+								<span class="munipb-tool-label"><?php esc_html_e( 'Categories', 'municipal-phonebook' ); ?></span>
+								<span class="munipb-count" data-munipb-count hidden>
+									<span class="munipb-count-num" aria-hidden="true"></span>
+									<span class="munipb-sr-only" data-munipb-count-text></span>
+								</span>
+								<?php echo self::icon_chevron(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+							</button>
+							<div class="munipb-cats-panel" id="<?php echo esc_attr( $id . '-cats' ); ?>" hidden>
+								<ul class="munipb-cats-list" role="group" aria-label="<?php esc_attr_e( 'Filter by department', 'municipal-phonebook' ); ?>">
+									<?php
+									foreach ( $toc_tree as $section ) {
+										echo self::render_cat_item( $id . '-c-' . (int) $section['id'], $section['id'], $section['name'], 0 ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
+										foreach ( $section['children'] as $child ) {
+											echo self::render_cat_item( $id . '-c-' . (int) $child['id'], $child['id'], $child['name'], (int) $child['depth'] ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts.
+										}
+									}
+									?>
+								</ul>
+							</div>
+						</div>
+					<?php endif; ?>
+					<?php if ( $opts['search'] ) : ?>
+						<form class="munipb-search<?php echo esc_attr( '' !== $query ? ' is-open' : '' ); ?>" id="<?php echo esc_attr( $id . '-search' ); ?>" role="search" method="get" action="<?php echo esc_url( '#' . $id ); ?>">
+							<label class="munipb-sr-only" for="<?php echo esc_attr( $id . '-q' ); ?>"><?php esc_html_e( 'Search the phonebook', 'municipal-phonebook' ); ?></label>
+							<div class="munipb-search-box">
+								<?php echo self::icon_search(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+								<input type="search" class="munipb-search-input" id="<?php echo esc_attr( $id . '-q' ); ?>" name="munipb_q" value="<?php echo esc_attr( $query ); ?>" maxlength="100"
+									placeholder="<?php esc_attr_e( 'Search name, role, department, phone…', 'municipal-phonebook' ); ?>"
+									role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="<?php echo esc_attr( $id . '-results' ); ?>" autocomplete="off">
+								<button type="button" class="munipb-search-clear" hidden aria-label="<?php esc_attr_e( 'Clear search', 'municipal-phonebook' ); ?>">&times;</button>
+								<button type="submit" class="munipb-search-submit"><?php esc_html_e( 'Search', 'municipal-phonebook' ); ?></button>
+							</div>
+							<div class="munipb-search-results" id="<?php echo esc_attr( $id . '-results' ); ?>" role="listbox" aria-label="<?php esc_attr_e( 'Search results', 'municipal-phonebook' ); ?>" hidden></div>
+							<div class="munipb-sr-only munipb-search-status" role="status" aria-live="polite"></div>
+						</form>
+					<?php endif; ?>
+					<div class="munipb-toolbar-end">
+						<?php if ( $opts['search'] ) : ?>
+							<button type="button" class="munipb-tool munipb-pill munipb-search-toggle" aria-expanded="<?php echo esc_attr( '' !== $query ? 'true' : 'false' ); ?>" aria-controls="<?php echo esc_attr( $id . '-search' ); ?>">
+								<span class="munipb-tool-label"><?php esc_html_e( 'Search', 'municipal-phonebook' ); ?></span>
+								<?php echo self::icon_search(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+							</button>
+						<?php endif; ?>
+						<button type="button" class="munipb-tool munipb-clear">
+							<span class="munipb-tool-label"><?php esc_html_e( 'Clear', 'municipal-phonebook' ); ?></span>
+							<?php echo self::icon_clear(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- static SVG. ?>
+						</button>
 					</div>
-					<div class="munipb-search-results" id="<?php echo esc_attr( $id . '-results' ); ?>" role="listbox" aria-label="<?php esc_attr_e( 'Search results', 'municipal-phonebook' ); ?>" hidden></div>
-					<div class="munipb-sr-only munipb-search-status" role="status" aria-live="polite"></div>
-				</form>
+				</div>
 			<?php endif; ?>
 
 			<?php if ( $words ) : ?>
@@ -300,27 +380,57 @@ class Munipb_Frontend {
 				</p>
 			<?php endif; ?>
 
-			<?php if ( $show_toc ) : ?>
-				<nav class="munipb-toc" aria-label="<?php esc_attr_e( 'Contents', 'municipal-phonebook' ); ?>">
-					<button type="button" class="munipb-toc-toggle" aria-expanded="false" aria-controls="<?php echo esc_attr( $id . '-toc' ); ?>">
-						<?php esc_html_e( 'Contents', 'municipal-phonebook' ); ?>
-						<span class="munipb-toc-arrow" aria-hidden="true">&#9662;</span>
-					</button>
-					<ul class="munipb-toc-list" id="<?php echo esc_attr( $id . '-toc' ); ?>">
-						<?php
-						foreach ( $toc_tree as $section ) :
-							$anchor = self::anchor( $section, $inst );
-							?>
-							<li><a href="<?php echo esc_url( '#' . $anchor ); ?>" data-munipb-target="<?php echo esc_attr( $anchor ); ?>"><?php echo esc_html( $section['name'] ); ?></a></li>
-						<?php endforeach; ?>
-					</ul>
-				</nav>
-			<?php endif; ?>
-
 			<?php echo self::render_all( $tree, $inst, $words ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- built from escaped parts. ?>
+			<p class="munipb-none" data-munipb-none hidden><?php esc_html_e( 'No results found', 'municipal-phonebook' ); ?></p>
 		</div>
 		<?php
 		return (string) ob_get_clean();
+	}
+
+	/**
+	 * Chevron shown on the categories button. Static markup.
+	 *
+	 * @return string
+	 */
+	private static function icon_chevron() {
+		return '<svg class="munipb-tool-icon munipb-chevron" aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"></path></svg>';
+	}
+
+	/**
+	 * Magnifier. Static markup. The search field and the search button share it.
+	 *
+	 * @return string
+	 */
+	private static function icon_search() {
+		return '<svg class="munipb-tool-icon munipb-search-icon" aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" fill="none" stroke="currentColor" stroke-width="2"></circle><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M21 21l-4.35-4.35"></path></svg>';
+	}
+
+	/**
+	 * Reset icon for the clear control. Static markup.
+	 *
+	 * @return string
+	 */
+	private static function icon_clear() {
+		return '<svg class="munipb-tool-icon" aria-hidden="true" focusable="false" width="16" height="16" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 1 1-2.64-6.36"></path><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M21 3v6h-6"></path></svg>';
+	}
+
+	/**
+	 * One department checkbox in the categories menu.
+	 *
+	 * @param string $input_id Input id.
+	 * @param int    $dept_id  Term id.
+	 * @param string $name     Label.
+	 * @param int    $depth    Indent depth (0 = top-level department).
+	 * @return string Escaped HTML.
+	 */
+	private static function render_cat_item( $input_id, $dept_id, $name, $depth ) {
+		$dept_id = (int) $dept_id;
+		$out     = '<li class="munipb-cats-item" style="' . esc_attr( '--munipb-depth:' . (int) $depth ) . '">';
+		$out    .= '<label class="munipb-cats-label" for="' . esc_attr( $input_id ) . '">';
+		$out    .= '<input type="checkbox" id="' . esc_attr( $input_id ) . '" value="' . esc_attr( (string) $dept_id ) . '" data-munipb-filter="' . esc_attr( (string) $dept_id ) . '">';
+		$out    .= '<span class="munipb-cats-name">' . esc_html( $name ) . '</span>';
+		$out    .= '</label></li>';
+		return $out;
 	}
 
 	/**
@@ -339,7 +449,7 @@ class Munipb_Frontend {
 				if ( $words && ! self::matches( $entry, $words, $section['name'] ) ) {
 					continue;
 				}
-				$rows .= self::render_entry_row( $entry, $inst );
+				$rows .= self::render_entry_row( $entry, $inst, $section['id'] );
 			}
 			foreach ( $section['children'] as $child ) {
 				$child_rows = '';
@@ -347,7 +457,7 @@ class Munipb_Frontend {
 					if ( $words && ! self::matches( $entry, $words, $section['name'] . ' ' . $child['name'] ) ) {
 						continue;
 					}
-					$child_rows .= self::render_entry_row( $entry, $inst );
+					$child_rows .= self::render_entry_row( $entry, $inst, $child['id'] );
 				}
 				$child_matches = $words ? self::matches( $child, $words, $section['name'] ) : true;
 				if ( '' === $child_rows && ! $child_matches ) {
@@ -376,7 +486,7 @@ class Munipb_Frontend {
 	private static function wrap_section( $section, $inst, $rows ) {
 		$anchor     = self::anchor( $section, $inst );
 		$heading_id = $anchor . '-title';
-		$out        = '<section class="munipb-section" id="' . esc_attr( $anchor ) . '" aria-labelledby="' . esc_attr( $heading_id ) . '">';
+		$out        = '<section class="munipb-section" id="' . esc_attr( $anchor ) . '" data-munipb-section="' . esc_attr( (string) (int) $section['id'] ) . '" aria-labelledby="' . esc_attr( $heading_id ) . '">';
 		$out       .= '<h2 class="munipb-section-title" id="' . esc_attr( $heading_id ) . '">' . esc_html( $section['name'] ) . '</h2>';
 		$out       .= '<table class="munipb-table"><thead><tr>';
 		$out       .= '<th scope="col" class="munipb-col-name">' . esc_html__( 'Full name', 'municipal-phonebook' ) . '</th>';
@@ -395,7 +505,7 @@ class Munipb_Frontend {
 	 * @return string
 	 */
 	private static function render_subdept_row( $child, $inst ) {
-		$out  = '<tr class="munipb-subdept-row munipb-depth-' . (int) $child['depth'] . '" id="' . esc_attr( self::anchor( $child, $inst ) ) . '" data-munipb-subdept>';
+		$out  = '<tr class="munipb-subdept-row munipb-depth-' . (int) $child['depth'] . '" id="' . esc_attr( self::anchor( $child, $inst ) ) . '" data-munipb-subdept data-munipb-dept="' . esc_attr( (string) (int) $child['id'] ) . '">';
 		$out .= '<th scope="rowgroup" colspan="2" class="munipb-subdept-name">' . esc_html( $child['name'] ) . '</th>';
 		$out .= '<td class="munipb-col-phone" data-label="' . esc_attr__( 'Phone', 'municipal-phonebook' ) . '">' . self::render_phones( $child['phones'] ) . '</td>';
 		$out .= '<td class="munipb-col-email" data-label="' . esc_attr__( 'Email', 'municipal-phonebook' ) . '">' . self::render_email( $child['email'] ) . '</td>';
@@ -406,12 +516,13 @@ class Munipb_Frontend {
 	/**
 	 * Render a contact row.
 	 *
-	 * @param array $entry Entry data.
-	 * @param int   $inst  Instance.
+	 * @param array $entry   Entry data.
+	 * @param int   $inst    Instance.
+	 * @param int   $dept_id Department the row belongs to (section id or sub-department id).
 	 * @return string
 	 */
-	private static function render_entry_row( $entry, $inst ) {
-		$out  = '<tr class="munipb-entry-row" id="' . esc_attr( self::entry_anchor( $entry['id'], $inst ) ) . '" data-munipb-entry>';
+	private static function render_entry_row( $entry, $inst, $dept_id ) {
+		$out  = '<tr class="munipb-entry-row" id="' . esc_attr( self::entry_anchor( $entry['id'], $inst ) ) . '" data-munipb-entry data-munipb-dept="' . esc_attr( (string) (int) $dept_id ) . '">';
 		$out .= '<td class="munipb-col-name">' . esc_html( $entry['name'] ) . '</td>';
 		$out .= '<td class="munipb-col-role" data-label="' . esc_attr__( 'Role', 'municipal-phonebook' ) . '">' . esc_html( $entry['role'] ) . '</td>';
 		$out .= '<td class="munipb-col-phone" data-label="' . esc_attr__( 'Phone', 'municipal-phonebook' ) . '">' . self::render_phones( $entry['phones'] ) . '</td>';

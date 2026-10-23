@@ -1,5 +1,5 @@
 /**
- * Municipal Phonebook – front-end search and table of contents.
+ * Municipal Phonebook – front-end search, category filter and toolbar.
  *
  * Vanilla JS, no dependencies. Every directory instance on the page is independent.
  * The search index is built from the rendered (already escaped) DOM and results are rendered with text nodes only.
@@ -173,16 +173,178 @@
 		return data;
 	}
 
-	function localSearch( index, words ) {
-		return index.filter( function ( item ) {
-			return words.every( function ( w ) {
-				if ( item.search.indexOf( w ) !== -1 ) {
+	function wordsMatch( search, digits, words ) {
+		if ( ! words.length ) {
+			return true;
+		}
+		return words.every( function ( w ) {
+			if ( search.indexOf( w ) !== -1 ) {
+				return true;
+			}
+			var d = digitsOnly( w );
+			return d.length >= 3 && digits.indexOf( d ) !== -1;
+		} );
+	}
+
+	function queryWords( query ) {
+		if ( String( query || '' ).trim().length < MIN_CHARS ) {
+			return [];
+		}
+		return normalize( query ).split( /\s+/ ).filter( Boolean );
+	}
+
+	function selectedIds( root ) {
+		var ids = [];
+		root.querySelectorAll( '.munipb-cats-panel input[type="checkbox"]:checked' ).forEach( function ( box ) {
+			ids.push( box.value );
+		} );
+		return ids;
+	}
+
+	function rowAllowed( el, selected ) {
+		if ( ! selected.length || ! el ) {
+			return true;
+		}
+		var section = el.classList.contains( 'munipb-section' ) ? el : el.closest( '.munipb-section' );
+		if ( ! section ) {
+			return true;
+		}
+		var sectionId = section.getAttribute( 'data-munipb-section' ) || '';
+		if ( selected.indexOf( sectionId ) !== -1 ) {
+			return true;
+		}
+		if ( el.classList.contains( 'munipb-section' ) ) {
+			var rows = section.querySelectorAll( '[data-munipb-dept]' );
+			for ( var i = 0; i < rows.length; i++ ) {
+				if ( selected.indexOf( rows[ i ].getAttribute( 'data-munipb-dept' ) ) !== -1 ) {
 					return true;
 				}
-				var d = digitsOnly( w );
-				return d.length >= 3 && item.digits.indexOf( d ) !== -1;
-			} );
+			}
+			return false;
+		}
+		return selected.indexOf( el.getAttribute( 'data-munipb-dept' ) || '' ) !== -1;
+	}
+
+	function setHidden( el, hidden ) {
+		if ( ! el ) {
+			return;
+		}
+		el.hidden = hidden;
+		el.classList.toggle( 'munipb-is-hidden', hidden );
+	}
+
+	function localSearch( index, words, selected ) {
+		return index.filter( function ( item ) {
+			return rowAllowed( item.el, selected ) && wordsMatch( item.search, item.digits, words );
 		} ).slice( 0, MAX_RESULTS );
+	}
+
+	/**
+	 * Hide rows that fail the department filter or the current search.
+	 * A checked top-level department shows that whole section. A checked
+	 * sub-department shows only that group. No checks shows everything.
+	 */
+	function applyView( state ) {
+		var selected = selectedIds( state.root );
+		var input = state.root.querySelector( '.munipb-search-input' );
+		var words = queryWords( input ? input.value : '' );
+		var anyVisible = false;
+
+		state.root.querySelectorAll( '.munipb-section' ).forEach( function ( section ) {
+			var sectionId = section.getAttribute( 'data-munipb-section' ) || '';
+			var sectionName = textOf( section.querySelector( '.munipb-section-title' ) );
+			var sectionOn = ! selected.length || selected.indexOf( sectionId ) !== -1;
+			var rows = section.querySelectorAll( 'tbody tr' );
+			var sectionHas = false;
+			var i = 0;
+
+			while ( i < rows.length ) {
+				var row = rows[ i ];
+				if ( row.hasAttribute( 'data-munipb-subdept' ) ) {
+					var deptId = row.getAttribute( 'data-munipb-dept' ) || '';
+					var allowed = sectionOn || selected.indexOf( deptId ) !== -1;
+					var subName = textOf( row.querySelector( '.munipb-subdept-name' ) );
+					var headerBlob = normalize( [ subName, sectionName, textOf( row ) ].join( ' ' ) );
+					var headerDigits = digitsOnly( textOf( row.querySelector( '.munipb-col-phone' ) ) );
+					var headerMatch = wordsMatch( headerBlob, headerDigits, words );
+					var entryVisible = false;
+					var j = i + 1;
+
+					while ( j < rows.length && ! rows[ j ].hasAttribute( 'data-munipb-subdept' ) ) {
+						var entry = rows[ j ];
+						var blob = normalize( [ textOf( entry ), subName, sectionName ].join( ' ' ) );
+						var show = allowed && wordsMatch( blob, digitsOnly( textOf( entry.querySelector( '.munipb-col-phone' ) ) ), words );
+						setHidden( entry, ! show );
+						if ( show ) {
+							entryVisible = true;
+						}
+						j++;
+					}
+
+					var showHeader = allowed && ( headerMatch || entryVisible );
+					setHidden( row, ! showHeader );
+					if ( showHeader || entryVisible ) {
+						sectionHas = true;
+					}
+					i = j;
+					continue;
+				}
+
+				var entryBlob = normalize( [ textOf( row ), sectionName ].join( ' ' ) );
+				var showEntry = sectionOn && wordsMatch( entryBlob, digitsOnly( textOf( row.querySelector( '.munipb-col-phone' ) ) ), words );
+				setHidden( row, ! showEntry );
+				if ( showEntry ) {
+					sectionHas = true;
+				}
+				i++;
+			}
+
+			setHidden( section, ! sectionHas );
+			if ( sectionHas ) {
+				anyVisible = true;
+			}
+		} );
+
+		var none = state.root.querySelector( '[data-munipb-none]' );
+		if ( none ) {
+			setHidden( none, ! ( state.root.querySelector( '.munipb-section' ) && ! anyVisible ) );
+		}
+		stripeRows( state.root );
+	}
+
+	/**
+	 * Odd/even classes follow the rows that are still visible, per department.
+	 * :nth-child would keep counting rows hidden by the filter.
+	 */
+	function stripeRows( root ) {
+		root.querySelectorAll( '.munipb-section' ).forEach( function ( section ) {
+			var n = 0;
+			section.querySelectorAll( 'tbody tr.munipb-entry-row' ).forEach( function ( row ) {
+				row.classList.remove( 'munipb-row-odd', 'munipb-row-even' );
+				if ( row.hidden || row.classList.contains( 'munipb-is-hidden' ) ) {
+					return;
+				}
+				n++;
+				row.classList.add( ( n % 2 === 1 ) ? 'munipb-row-odd' : 'munipb-row-even' );
+			} );
+		} );
+	}
+
+	function updateBadge( state ) {
+		var badge = state.root.querySelector( '[data-munipb-count]' );
+		if ( ! badge ) {
+			return;
+		}
+		var count = selectedIds( state.root ).length;
+		var num = badge.querySelector( '.munipb-count-num' );
+		var text = badge.querySelector( '[data-munipb-count-text]' );
+		if ( num ) {
+			num.textContent = String( count );
+		}
+		if ( text ) {
+			text.textContent = String( i18n.selected || '%d selected' ).replace( '%d', String( count ) );
+		}
+		setHidden( badge, count === 0 );
 	}
 
 	function initSearch( state ) {
@@ -200,9 +362,11 @@
 		var selected = -1;
 		var timer = null;
 
-		form.classList.add( 'munipb-js' );
 		if ( submit ) {
 			submit.hidden = true;
+		}
+		if ( clear && input.value.trim() !== '' ) {
+			clear.hidden = false;
 		}
 
 		function announce( msg ) {
@@ -244,6 +408,9 @@
 				clear.hidden = true;
 			}
 			hide();
+			if ( state.applyView ) {
+				state.applyView();
+			}
 			revealTarget( item.el );
 		}
 
@@ -299,14 +466,26 @@
 		}
 
 		function search( query ) {
-			var words = normalize( query ).split( /\s+/ ).filter( Boolean );
-			render( localSearch( index, words ), words );
+			var words = queryWords( query );
+			render( localSearch( index, words, selectedIds( state.root ) ), words );
 		}
+
+		state.refreshSearch = function () {
+			var q = input.value.trim();
+			if ( list.hidden || q.length < MIN_CHARS ) {
+				return;
+			}
+			search( q.slice( 0, 100 ) );
+		};
+
 		input.addEventListener( 'input', function () {
 			var q = input.value.trim();
 			clearTimeout( timer );
 			if ( clear ) {
 				clear.hidden = q === '';
+			}
+			if ( state.applyView ) {
+				state.applyView();
 			}
 			if ( q.length < MIN_CHARS ) {
 				hide();
@@ -330,7 +509,12 @@
 				e.preventDefault();
 				go( selected >= 0 ? selected : 0 );
 			} else if ( e.key === 'Escape' ) {
+				var empty = input.value.trim() === '';
 				hide();
+				if ( empty && state.closeSearch ) {
+					e.preventDefault();
+					state.closeSearch();
+				}
 			}
 		} );
 
@@ -344,6 +528,9 @@
 				clear.hidden = true;
 				hide();
 				announce( '' );
+				if ( state.applyView ) {
+					state.applyView();
+				}
 				input.focus();
 			} );
 		}
@@ -351,79 +538,184 @@
 		form.addEventListener( 'submit', function ( e ) {
 			e.preventDefault();
 		} );
+
+		state.hideResults = hide;
 	}
 
 	/* ------------------------------------------------------------------ */
-	/* Table of contents                                                   */
+	/* Categories                                                          */
 	/* ------------------------------------------------------------------ */
 
-	function observeSections( state ) {
-		if ( ! state.toc || ! ( 'IntersectionObserver' in window ) ) {
+	function initCats( state ) {
+		var wrap = state.root.querySelector( '.munipb-cats' );
+		if ( ! wrap ) {
 			return;
 		}
-		if ( state.observer ) {
-			state.observer.disconnect();
+		var toggle = wrap.querySelector( '.munipb-cats-toggle' );
+		var panel = wrap.querySelector( '.munipb-cats-panel' );
+		if ( ! toggle || ! panel ) {
+			return;
 		}
-		var links = state.toc.querySelectorAll( 'a[data-munipb-target]' );
-		state.observer = new IntersectionObserver( function ( entries ) {
-			entries.forEach( function ( entry ) {
-				if ( ! entry.isIntersecting ) {
-					return;
-				}
-				links.forEach( function ( a ) {
-					var active = a.getAttribute( 'data-munipb-target' ) === entry.target.id;
-					a.classList.toggle( 'is-active', active );
-					if ( active ) {
-						a.setAttribute( 'aria-current', 'location' );
-					} else {
-						a.removeAttribute( 'aria-current' );
-					}
-				} );
-			} );
-		}, { rootMargin: '-10% 0px -70% 0px', threshold: 0 } );
-		state.root.querySelectorAll( '.munipb-section' ).forEach( function ( s ) {
-			state.observer.observe( s );
-		} );
-	}
 
-	function initToc( state ) {
-		var toc = state.root.querySelector( '.munipb-toc' );
-		if ( ! toc ) {
-			return;
+		function boxes() {
+			return Array.prototype.slice.call( panel.querySelectorAll( 'input[type="checkbox"]' ) );
 		}
-		state.toc = toc;
-		var toggle = toc.querySelector( '.munipb-toc-toggle' );
-		var list = toc.querySelector( '.munipb-toc-list' );
-		toc.classList.add( 'munipb-js' );
-		list.hidden = true;
 
 		function setOpen( open ) {
-			list.hidden = ! open;
+			setHidden( panel, ! open );
 			toggle.setAttribute( 'aria-expanded', open ? 'true' : 'false' );
-			toc.classList.toggle( 'is-open', open );
+			wrap.classList.toggle( 'is-open', open );
 		}
 
+		state.closeCats = function () {
+			setOpen( false );
+		};
+
 		toggle.addEventListener( 'click', function () {
-			setOpen( list.hidden );
+			setOpen( panel.hidden );
 		} );
 
-		list.addEventListener( 'click', function ( e ) {
-			var link = e.target.closest( 'a[data-munipb-target]' );
-			if ( ! link ) {
+		toggle.addEventListener( 'keydown', function ( e ) {
+			var list = boxes();
+			if ( ! list.length ) {
 				return;
 			}
-			var targetId = link.getAttribute( 'data-munipb-target' );
-			var target = document.getElementById( targetId );
-			e.preventDefault();
-			setOpen( false );
-			if ( target ) {
-				revealTarget( target );
-				// Keep whatever state other scripts stored (e.g. the WP Interactivity API) on this entry.
-				window.history.pushState( window.history.state, '', '#' + targetId );
+			if ( e.key === 'ArrowDown' ) {
+				e.preventDefault();
+				setOpen( true );
+				list[ 0 ].focus();
+			} else if ( e.key === 'ArrowUp' ) {
+				e.preventDefault();
+				setOpen( true );
+				list[ list.length - 1 ].focus();
+			} else if ( e.key === 'Escape' ) {
+				setOpen( false );
 			}
 		} );
 
-		observeSections( state );
+		panel.addEventListener( 'keydown', function ( e ) {
+			var list = boxes();
+			var index = list.indexOf( document.activeElement );
+			if ( e.key === 'ArrowDown' && index < list.length - 1 ) {
+				e.preventDefault();
+				list[ index + 1 ].focus();
+			} else if ( e.key === 'ArrowUp' ) {
+				e.preventDefault();
+				if ( index > 0 ) {
+					list[ index - 1 ].focus();
+				} else {
+					toggle.focus();
+				}
+			} else if ( e.key === 'Home' && list.length ) {
+				e.preventDefault();
+				list[ 0 ].focus();
+			} else if ( e.key === 'End' && list.length ) {
+				e.preventDefault();
+				list[ list.length - 1 ].focus();
+			} else if ( e.key === 'Escape' ) {
+				e.preventDefault();
+				setOpen( false );
+				toggle.focus();
+			}
+		} );
+
+		panel.addEventListener( 'change', function ( e ) {
+			if ( ! e.target.matches( 'input[type="checkbox"]' ) ) {
+				return;
+			}
+			updateBadge( state );
+			if ( state.applyView ) {
+				state.applyView();
+			}
+			if ( state.refreshSearch ) {
+				state.refreshSearch();
+			}
+		} );
+
+		panel.addEventListener( 'focusout', function ( e ) {
+			if ( ! wrap.contains( e.relatedTarget ) ) {
+				setOpen( false );
+			}
+		} );
+
+		document.addEventListener( 'click', function ( e ) {
+			if ( ! wrap.contains( e.target ) ) {
+				setOpen( false );
+			}
+		} );
+	}
+
+	/* ------------------------------------------------------------------ */
+	/* Search reveal and clear                                             */
+	/* ------------------------------------------------------------------ */
+
+	function initSearchToggle( state ) {
+		var button = state.root.querySelector( '.munipb-search-toggle' );
+		var form = state.root.querySelector( '.munipb-search' );
+		if ( ! button || ! form ) {
+			return;
+		}
+		var input = form.querySelector( '.munipb-search-input' );
+
+		function openSearch() {
+			form.classList.add( 'is-open' );
+			button.setAttribute( 'aria-expanded', 'true' );
+			if ( input ) {
+				input.focus();
+			}
+		}
+
+		state.closeSearch = function () {
+			form.classList.remove( 'is-open' );
+			button.setAttribute( 'aria-expanded', 'false' );
+			if ( state.hideResults ) {
+				state.hideResults();
+			}
+			button.focus();
+		};
+
+		button.addEventListener( 'click', function () {
+			openSearch();
+		} );
+	}
+
+	function initClear( state ) {
+		var button = state.root.querySelector( '.munipb-clear' );
+		if ( ! button ) {
+			return;
+		}
+		button.addEventListener( 'click', function () {
+			if ( state.root.getAttribute( 'data-munipb-server-query' ) === '1' ) {
+				var url = new URL( window.location.href );
+				url.searchParams.delete( 'munipb_q' );
+				if ( state.root.id ) {
+					url.hash = state.root.id;
+				}
+				window.location.assign( url.toString() );
+				return;
+			}
+			state.root.querySelectorAll( '.munipb-cats-panel input[type="checkbox"]' ).forEach( function ( box ) {
+				box.checked = false;
+			} );
+			var input = state.root.querySelector( '.munipb-search-input' );
+			var clear = state.root.querySelector( '.munipb-search-clear' );
+			if ( input ) {
+				input.value = '';
+			}
+			if ( clear ) {
+				clear.hidden = true;
+			}
+			if ( state.hideResults ) {
+				state.hideResults();
+			}
+			if ( state.closeCats ) {
+				state.closeCats();
+			}
+			updateBadge( state );
+			if ( state.applyView ) {
+				state.applyView();
+			}
+		} );
 	}
 
 	/* ------------------------------------------------------------------ */
@@ -434,15 +726,19 @@
 		if ( ! root || root.munipbState ) {
 			return;
 		}
-		var state = {
-			root: root,
-			toc: null,
-			observer: null
-		};
+		var state = { root: root };
 		root.munipbState = state;
+		root.classList.add( 'munipb-js' );
+		state.applyView = function () {
+			applyView( state );
+		};
 
 		initSearch( state );
-		initToc( state );
+		initCats( state );
+		initSearchToggle( state );
+		initClear( state );
+		updateBadge( state );
+		state.applyView();
 
 		root.addEventListener( 'click', function ( e ) {
 			if ( config.trackCalls ) {
