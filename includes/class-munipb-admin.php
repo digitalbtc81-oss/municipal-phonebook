@@ -406,6 +406,44 @@ class Munipb_Admin {
 			'wp-color-picker',
 			'jQuery( function ( $ ) { $( ".munipb-color-picker" ).wpColorPicker(); } );'
 		);
+
+		// WordPress 7.1 leaves CSS lint off unless the caller turns it on.
+		// Gutters are copied only when lint is already enabled, so pass both.
+		$editor = wp_enqueue_code_editor(
+			array(
+				'type'       => 'text/css',
+				'codemirror' => array(
+					'lint'    => true,
+					'gutters' => array( 'CodeMirror-lint-markers', 'CodeMirror-linenumbers' ),
+				),
+			)
+		);
+		if ( false === $editor ) {
+			return;
+		}
+		wp_add_inline_script(
+			'code-editor',
+			'jQuery( function () {
+				var textarea = document.getElementById( "munipb-custom-css" );
+				if ( ! textarea || ! window.wp || ! wp.codeEditor ) { return; }
+				var notice = document.getElementById( "munipb-css-lint-notice" );
+				var button = document.getElementById( "submit" );
+				var form = textarea.form;
+				var blocked = false;
+				wp.codeEditor.initialize( textarea, {
+					onChangeLintingErrors: function ( errors ) {
+						blocked = !!( errors && errors.length );
+						if ( notice ) { notice.hidden = ! blocked; }
+						if ( button ) { button.disabled = blocked; }
+					}
+				} );
+				if ( form ) {
+					form.addEventListener( "submit", function ( event ) {
+						if ( blocked ) { event.preventDefault(); }
+					} );
+				}
+			} );'
+		);
 	}
 
 	/**
@@ -426,6 +464,7 @@ class Munipb_Admin {
 		?>
 		<div class="wrap">
 			<h1><?php esc_html_e( 'Phonebook settings', 'municipal-phonebook' ); ?></h1>
+			<?php settings_errors(); ?>
 			<form method="post" action="options.php">
 				<?php settings_fields( 'munipb_settings_group' ); ?>
 				<table class="form-table" role="presentation">
@@ -458,6 +497,12 @@ class Munipb_Admin {
 						</td>
 					</tr>
 				</table>
+				<h2><?php esc_html_e( 'Custom CSS', 'municipal-phonebook' ); ?></h2>
+				<p class="description"><?php esc_html_e( 'This CSS is added only on pages that show the directory. Invalid CSS is rejected and the previous value is kept.', 'municipal-phonebook' ); ?></p>
+				<textarea id="munipb-custom-css" name="munipb_settings[custom_css]" rows="12" cols="60" class="large-text code"><?php echo esc_textarea( (string) $s['custom_css'] ); ?></textarea>
+				<div id="munipb-css-lint-notice" class="notice notice-error inline" hidden>
+					<p><?php esc_html_e( 'The CSS has errors. Fix them before saving.', 'municipal-phonebook' ); ?></p>
+				</div>
 				<?php submit_button(); ?>
 			</form>
 			<h2><?php esc_html_e( 'Usage', 'municipal-phonebook' ); ?></h2>

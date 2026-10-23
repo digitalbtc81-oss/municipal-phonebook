@@ -19,6 +19,287 @@ function munipb_default_settings() {
 		'delete_on_remove' => 0,
 		'row_odd'          => '#ffffff',
 		'row_even'         => '#f3f6fc',
+		'custom_css'       => '',
+	);
+}
+
+/**
+ * Maximum stored custom CSS, in bytes.
+ *
+ * @return int
+ */
+function munipb_custom_css_max_bytes() {
+	return 51200;
+}
+
+/**
+ * Build an inspection result.
+ *
+ * @param bool   $ok   Whether the CSS may be stored and printed.
+ * @param string $css  CSS to keep when valid.
+ * @param string $code Error code, or ''.
+ * @param int    $line Line where the problem starts, or 0.
+ * @return array{ok:bool,css:string,code:string,line:int}
+ */
+function munipb_css_inspection( $ok, $css, $code, $line ) {
+	return array(
+		'ok'   => $ok,
+		'css'  => $css,
+		'code' => $code,
+		'line' => $line,
+	);
+}
+
+/**
+ * Move past a CSS escape and count a newline that the escape consumes.
+ *
+ * @param string $css    CSS.
+ * @param int    $length Length.
+ * @param int    $i      Index of the backslash. Updated.
+ * @param int    $line   Current line. Updated by the caller via return.
+ * @return int Line number.
+ */
+function munipb_css_skip_escape( $css, $length, &$i, $line ) {
+	$next = ( $i + 1 < $length ) ? $css[ $i + 1 ] : '';
+	if ( "\r" === $next ) {
+		$third = ( $i + 2 < $length ) ? $css[ $i + 2 ] : '';
+		$i    += ( "\n" === $third ) ? 3 : 2;
+		return $line + 1;
+	}
+	if ( "\n" === $next ) {
+		$i += 2;
+		return $line + 1;
+	}
+	$i += ( '' === $next ) ? 1 : 2;
+	return $line;
+}
+
+/**
+ * Count one source line and advance the scanner.
+ *
+ * @param string $ch   Current byte.
+ * @param string $next Following byte.
+ * @param int    $line Current line.
+ * @param int    $i    Index. Updated.
+ * @return int Line number.
+ */
+function munipb_css_advance_line( $ch, $next, $line, &$i ) {
+	if ( "\r" === $ch ) {
+		$i += ( "\n" === $next ) ? 2 : 1;
+		return $line + 1;
+	}
+	if ( "\n" === $ch ) {
+		++$i;
+		return $line + 1;
+	}
+	++$i;
+	return $line;
+}
+
+/**
+ * Validate custom CSS.
+ *
+ * Empty CSS is valid. Markup, null bytes, more than 50 KB, unclosed
+ * comments or strings, and unbalanced braces are rejected. The child
+ * combinator ">" is allowed. Nothing is rewritten: invalid CSS is refused
+ * instead of being passed through strip_tags().
+ *
+ * @param mixed $css Raw CSS.
+ * @return array{ok:bool,css:string,code:string,line:int}
+ */
+function munipb_inspect_custom_css( $css ) {
+	if ( ! is_string( $css ) ) {
+		return munipb_css_inspection( false, '', 'invalid', 0 );
+	}
+	if ( '' === trim( $css ) ) {
+		return munipb_css_inspection( true, '', '', 0 );
+	}
+	if ( strlen( $css ) > munipb_custom_css_max_bytes() ) {
+		return munipb_css_inspection( false, '', 'too_long', 0 );
+	}
+	if ( false !== strpos( $css, "\0" ) ) {
+		return munipb_css_inspection( false, '', 'invalid', 0 );
+	}
+	$stripped = strip_tags( $css ); // phpcs:ignore WordPress.WP.AlternativeFunctions.strip_tags_strip_tags -- reject CSS that strip_tags() would alter; do not rewrite it.
+	if ( false !== strpos( $css, '<' ) || preg_match( '/<\s*\/\s*style/i', $css ) || $stripped !== $css ) {
+		return munipb_css_inspection( false, '', 'markup', 0 );
+	}
+
+	$length       = strlen( $css );
+	$line         = 1;
+	$i            = 0;
+	$mode         = 'normal';
+	$quote        = '';
+	$string_line  = 1;
+	$comment_line = 1;
+	$opens        = array();
+
+	while ( $i < $length ) {
+		$ch   = $css[ $i ];
+		$next = ( $i + 1 < $length ) ? $css[ $i + 1 ] : '';
+
+		if ( 'comment' === $mode ) {
+			if ( '*' === $ch && '/' === $next ) {
+				$mode = 'normal';
+				$i   += 2;
+				continue;
+			}
+			$line = munipb_css_advance_line( $ch, $next, $line, $i );
+			continue;
+		}
+
+		if ( 'string' === $mode ) {
+			if ( '\\' === $ch ) {
+				$line = munipb_css_skip_escape( $css, $length, $i, $line );
+				continue;
+			}
+			if ( $ch === $quote ) {
+				$mode = 'normal';
+				++$i;
+				continue;
+			}
+			if ( "\n" === $ch || "\r" === $ch ) {
+				return munipb_css_inspection( false, '', 'unclosed_string', $string_line );
+			}
+			++$i;
+			continue;
+		}
+
+		if ( '\\' === $ch ) {
+			$line = munipb_css_skip_escape( $css, $length, $i, $line );
+			continue;
+		}
+		if ( '/' === $ch && '*' === $next ) {
+			$mode         = 'comment';
+			$comment_line = $line;
+			$i           += 2;
+			continue;
+		}
+		if ( '"' === $ch || "'" === $ch ) {
+			$mode        = 'string';
+			$quote       = $ch;
+			$string_line = $line;
+			++$i;
+			continue;
+		}
+		if ( '{' === $ch ) {
+			$opens[] = $line;
+			++$i;
+			continue;
+		}
+		if ( '}' === $ch ) {
+			if ( array() === $opens ) {
+				return munipb_css_inspection( false, '', 'unbalanced', $line );
+			}
+			array_pop( $opens );
+			++$i;
+			continue;
+		}
+		$line = munipb_css_advance_line( $ch, $next, $line, $i );
+	}
+
+	if ( 'comment' === $mode ) {
+		return munipb_css_inspection( false, '', 'unclosed_comment', $comment_line );
+	}
+	if ( 'string' === $mode ) {
+		return munipb_css_inspection( false, '', 'unclosed_string', $string_line );
+	}
+	if ( array() !== $opens ) {
+		return munipb_css_inspection( false, '', 'unbalanced', (int) $opens[0] );
+	}
+	return munipb_css_inspection( true, $css, '', 0 );
+}
+
+/**
+ * CSS that is safe to store and print, or '' when it is empty or invalid.
+ *
+ * @param mixed $css Raw CSS.
+ * @return string
+ */
+function munipb_prepare_custom_css( $css ) {
+	$result = munipb_inspect_custom_css( is_scalar( $css ) ? (string) $css : '' );
+	return $result['ok'] ? $result['css'] : '';
+}
+
+/**
+ * Replace the selector keyword with one widget directory wrapper.
+ *
+ * CSS without that keyword is nested under the wrapper. Invalid CSS and an
+ * unexpected wrapper are discarded.
+ *
+ * @param mixed  $css   Raw CSS.
+ * @param string $scope Widget scope, ".elementor-element-ID .munipb-directory".
+ * @return string
+ */
+function munipb_scope_custom_css( $css, $scope ) {
+	$prepared = munipb_prepare_custom_css( $css );
+	$scope    = (string) $scope;
+	if ( '' === $prepared || 1 !== preg_match( '/^\.elementor-element-[A-Za-z0-9_-]+ \.munipb-directory$/', $scope ) ) {
+		return '';
+	}
+	if ( false === strpos( $prepared, 'selector' ) ) {
+		return $scope . '{' . $prepared . '}';
+	}
+	return str_replace( 'selector', $scope, $prepared );
+}
+
+/**
+ * Greek (and other translated) explanation for a rejected settings value.
+ *
+ * @param string $code Error code from munipb_inspect_custom_css().
+ * @param int    $line Line number, when the code has one.
+ * @return string
+ */
+function munipb_custom_css_error_message( $code, $line ) {
+	$line = (int) $line;
+	switch ( $code ) {
+		case 'too_long':
+			return __( 'The custom CSS is too long. The limit is 50 KB. The previous CSS was kept.', 'municipal-phonebook' );
+		case 'markup':
+			return __( 'The custom CSS cannot contain HTML or a style tag. The previous CSS was kept.', 'municipal-phonebook' );
+		case 'unclosed_comment':
+			return sprintf(
+				/* translators: %d: line number. */
+				__( 'The custom CSS has an unclosed comment on line %d. The previous CSS was kept.', 'municipal-phonebook' ),
+				$line
+			);
+		case 'unclosed_string':
+			return sprintf(
+				/* translators: %d: line number. */
+				__( 'The custom CSS has an unclosed quote on line %d. The previous CSS was kept.', 'municipal-phonebook' ),
+				$line
+			);
+		case 'unbalanced':
+			return sprintf(
+				/* translators: %d: line number. */
+				__( 'The custom CSS has unbalanced braces on line %d. The previous CSS was kept.', 'municipal-phonebook' ),
+				$line
+			);
+		default:
+			return __( 'The custom CSS is not valid. The previous CSS was kept.', 'municipal-phonebook' );
+	}
+}
+
+/**
+ * Record one settings error for a rejected stylesheet.
+ *
+ * The Settings API may sanitize the option twice. The notice is added once.
+ *
+ * @param string $code Error code.
+ * @param int    $line Line number.
+ * @return void
+ */
+function munipb_flag_custom_css_settings_error( $code, $line ) {
+	static $sent = false;
+	if ( $sent ) {
+		return;
+	}
+	$sent = true;
+	add_settings_error(
+		'munipb_settings',
+		'munipb_custom_css',
+		munipb_custom_css_error_message( $code, $line ),
+		'error'
 	);
 }
 
@@ -50,8 +331,9 @@ function munipb_get_settings() {
  * Sanitize the settings option.
  *
  * Booleans come from the submitted array (an unchecked box is 0). Row colors
- * that are absent — a save that only touches another key — stay as stored.
- * An empty or invalid color that was submitted falls back to the default.
+ * and custom CSS that are absent — a save that only touches another key — stay
+ * as stored. An empty or invalid color that was submitted falls back to the
+ * default. Invalid custom CSS keeps the previous stylesheet.
  *
  * @param mixed $input Raw input.
  * @return array<string, mixed>
@@ -75,6 +357,17 @@ function munipb_sanitize_settings( $input ) {
 		}
 		$color       = munipb_sanitize_hex( $input[ $key ] );
 		$out[ $key ] = '' !== $color ? $color : $defaults[ $key ];
+	}
+	if ( ! array_key_exists( 'custom_css', $input ) ) {
+		$out['custom_css'] = munipb_prepare_custom_css( isset( $existing['custom_css'] ) ? $existing['custom_css'] : '' );
+	} else {
+		$checked = munipb_inspect_custom_css( is_scalar( $input['custom_css'] ) ? (string) $input['custom_css'] : '' );
+		if ( $checked['ok'] ) {
+			$out['custom_css'] = $checked['css'];
+		} else {
+			$out['custom_css'] = munipb_prepare_custom_css( isset( $existing['custom_css'] ) ? $existing['custom_css'] : '' );
+			munipb_flag_custom_css_settings_error( $checked['code'], (int) $checked['line'] );
+		}
 	}
 	munipb_flush_cache();
 	return $out;
