@@ -17,7 +17,20 @@ function munipb_default_settings() {
 		'enable_rest'      => 0,
 		'track_calls'      => 0,
 		'delete_on_remove' => 0,
+		'row_odd'          => '#ffffff',
+		'row_even'         => '#ffffff',
 	);
+}
+
+/**
+ * Sanitize a hex color. Empty or invalid values become an empty string.
+ *
+ * @param mixed $color Raw color.
+ * @return string #rgb or #rrggbb, or ''.
+ */
+function munipb_sanitize_hex( $color ) {
+	$color = sanitize_hex_color( is_scalar( $color ) ? (string) $color : '' );
+	return is_string( $color ) ? $color : '';
 }
 
 /**

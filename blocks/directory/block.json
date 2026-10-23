@@ -2,7 +2,7 @@
 	"$schema": "https://schemas.wp.org/trunk/block.json",
 	"apiVersion": 3,
 	"name": "municipal-phonebook/directory",
-	"version": "1.2.0",
+	"version": "1.4.0",
 	"title": "Municipal Phonebook",
 	"category": "widgets",
 	"icon": "phone",
@@ -36,6 +36,14 @@
 				"960",
 				"always"
 			]
+		},
+		"rowOdd": {
+			"type": "string",
+			"default": ""
+		},
+		"rowEven": {
+			"type": "string",
+			"default": ""
 		}
 	},
 	"supports": {

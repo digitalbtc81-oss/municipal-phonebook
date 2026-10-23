@@ -8,6 +8,10 @@
 	--munipb-sub-bg: #e8f4fc;
 	--munipb-flash: #fff3cd;
 	--munipb-radius: 10px;
+	--munipb-toolbar: #2b59c3;
+	--munipb-toolbar-bg: #f4f5f7;
+	--munipb-row-odd: #ffffff;
+	--munipb-row-even: #ffffff;
 	max-width: 1200px;
 	margin: 0 auto;
 	container-type: inline-size;
@@ -34,11 +38,107 @@
 	border: 0;
 }
 
-/* Search */
+/* Toolbar */
+.munipb-toolbar {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 0.75rem 1rem;
+	margin: 0 0 1rem;
+	padding: 0.75rem 1rem;
+	background: var(--munipb-toolbar-bg);
+	border-radius: 12px;
+}
+
+.munipb-toolbar-end {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 0.75rem 1.15rem;
+	margin-left: auto;
+}
+
+.munipb-cats {
+	position: relative;
+}
+
+.munipb-count-num {
+	margin-left: 0.15em;
+	font-size: 0.72em;
+	font-weight: 600;
+	line-height: 1;
+	vertical-align: super;
+}
+
+.munipb-cats-panel {
+	position: absolute;
+	z-index: 40;
+	top: calc(100% + 6px);
+	left: 0;
+	min-width: 240px;
+	max-width: min(360px, 86vw);
+	max-height: 320px;
+	overflow: auto;
+	margin: 0;
+	padding: 0.35rem 0;
+	background: #fff;
+	border: 1px solid var(--munipb-toolbar);
+	border-radius: 12px;
+	box-shadow: 0 8px 24px rgba(30, 58, 95, 0.12);
+}
+
+.munipb-cats-list {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.munipb-cats-label {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	margin: 0;
+	padding: 0.4rem 0.9rem 0.4rem calc(0.9rem + (var(--munipb-depth, 0) * 0.9rem));
+	color: var(--munipb-primary-dark);
+	font-family: inherit;
+	font-size: 0.875rem;
+	font-weight: 400;
+	font-style: normal;
+	line-height: 1.35;
+	letter-spacing: normal;
+	text-transform: none;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.munipb-cats-label:hover {
+	background: #eef2fb;
+}
+
+.munipb-cats.is-open .munipb-chevron {
+	transform: rotate(180deg);
+}
+
+.munipb-tool-icon,
+.munipb-search-icon {
+	display: block;
+	flex: 0 0 auto;
+	width: 16px;
+	height: 16px;
+	stroke: currentColor;
+}
+
+/* Search. Hidden until the Search button opens it; a noscript rule shows it without JS. */
 .munipb-search {
 	position: relative;
-	margin: 0 auto 1.5rem;
-	max-width: 720px;
+	display: block;
+	margin: 0 0 1.25rem;
+	max-width: none;
+}
+
+.munipb-directory .munipb-search:not(.is-open) {
+	display: none;
 }
 
 .munipb-search-box {
@@ -47,19 +147,18 @@
 	gap: 0.5rem;
 	padding: 0 0.75rem;
 	background: #fff;
-	border: 2px solid var(--munipb-border);
+	border: 1px solid var(--munipb-toolbar);
 	border-radius: 999px;
-	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+	box-shadow: none;
 	transition: border-color 0.2s;
 }
 
 .munipb-search-box:focus-within {
-	border-color: var(--munipb-primary);
+	border-color: var(--munipb-toolbar);
 }
 
-.munipb-search-icon {
-	flex: 0 0 auto;
-	color: var(--munipb-primary);
+.munipb-search .munipb-search-icon {
+	color: var(--munipb-toolbar);
 }
 
 .munipb-directory .munipb-search-input {
@@ -183,66 +282,9 @@
 	text-align: center;
 }
 
-/* Table of contents */
-.munipb-toc {
-	margin: 0 0 2rem;
-	border: 1px solid var(--munipb-border);
-	border-radius: var(--munipb-radius);
-	background: var(--munipb-bg-soft);
-}
-
-.munipb-toc-toggle {
-	display: none;
-	width: 100%;
-	padding: 0.9rem 1.1rem;
-	border: 0;
-	background: transparent;
-	color: var(--munipb-primary-dark);
-	font: inherit;
-	font-weight: 700;
-	text-align: left;
-	cursor: pointer;
-}
-
-.munipb-toc.munipb-js .munipb-toc-toggle {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-
-.munipb-toc-arrow {
-	transition: transform 0.2s;
-}
-
-.munipb-toc.is-open .munipb-toc-arrow {
-	transform: rotate(180deg);
-}
-
-.munipb-toc-list {
-	display: grid;
-	grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-	gap: 0.25rem 1.5rem;
-	margin: 0;
-	padding: 0.5rem 1.25rem 1rem;
-	list-style: none;
-}
-
-.munipb-toc-list[hidden] {
-	display: none;
-}
-
-.munipb-toc-list a {
-	display: block;
-	padding: 0.3rem 0;
-	color: var(--munipb-primary);
-	text-decoration: none;
-}
-
-.munipb-toc-list a:hover,
-.munipb-toc-list a:focus,
-.munipb-toc-list a.is-active {
-	color: var(--munipb-primary-dark);
-	text-decoration: underline;
+.munipb-none {
+	margin: 1rem 0 2rem;
+	text-align: center;
 }
 
 /* Sections & table */
@@ -688,9 +730,10 @@
 
 @media print {
 
+	.munipb-toolbar,
 	.munipb-search,
-	.munipb-toc,
-	.munipb-filter-note {
+	.munipb-filter-note,
+	.munipb-none {
 		display: none !important;
 	}
 
@@ -708,5 +751,392 @@
 	.munipb-phone,
 	.munipb-email {
 		color: #000;
+	}
+}
+
+/*
+ * Theme reset.
+ *
+ * Hello Elementor reset.css paints every button pink (#c36) and gives search
+ * inputs its own border, padding and radius. WoodMart-style rules do the same
+ * from selectors such as `body .site-content button:hover` (0,1,2).
+ * `.munipb-directory .munipb-toolbar button.munipb-tool:hover` is (0,4,1),
+ * which wins without !important. Card layout sets `tr { display: block }`,
+ * which beats the user-agent [hidden] rule, so hidden rows do use !important.
+ */
+.munipb-directory [hidden],
+.munipb-directory .munipb-is-hidden {
+	display: none !important;
+}
+
+.munipb-directory .munipb-toolbar button.munipb-tool,
+.munipb-directory .munipb-toolbar button.munipb-tool:hover,
+.munipb-directory .munipb-toolbar button.munipb-tool:focus,
+.munipb-directory .munipb-toolbar button.munipb-tool:focus-visible,
+.munipb-directory .munipb-toolbar button.munipb-tool:active,
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]),
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):hover,
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):focus,
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):focus-visible,
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):active,
+.munipb-directory .munipb-search button.munipb-search-submit,
+.munipb-directory .munipb-search button.munipb-search-submit:hover,
+.munipb-directory .munipb-search button.munipb-search-submit:focus,
+.munipb-directory .munipb-search button.munipb-search-submit:focus-visible,
+.munipb-directory .munipb-search button.munipb-search-submit:active {
+	appearance: none;
+	-webkit-appearance: none;
+	box-sizing: border-box;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.4rem;
+	width: auto;
+	min-width: 0;
+	max-width: none;
+	height: auto;
+	min-height: 2rem;
+	max-height: none;
+	margin: 0;
+	padding: 0.35rem 0.9rem;
+	float: none;
+	border: 1px solid var(--munipb-toolbar);
+	border-radius: 999px;
+	background: transparent;
+	background-color: transparent;
+	background-image: none;
+	color: var(--munipb-toolbar);
+	box-shadow: none;
+	text-shadow: none;
+	filter: none;
+	opacity: 1;
+	transform: none;
+	font-family: inherit;
+	font-size: 0.875rem;
+	font-weight: 500;
+	font-style: normal;
+	line-height: 1.2;
+	letter-spacing: normal;
+	text-transform: none;
+	text-decoration: none;
+	text-align: center;
+	text-indent: 0;
+	white-space: nowrap;
+	vertical-align: middle;
+	cursor: pointer;
+}
+
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-pill:hover,
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-pill:active {
+	border-color: var(--munipb-toolbar);
+	background-color: #eef2fb;
+	color: var(--munipb-toolbar);
+	box-shadow: none;
+	text-decoration: none;
+}
+
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-clear,
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-clear:hover,
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-clear:focus,
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-clear:focus-visible,
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-clear:active {
+	border-color: transparent;
+	background: transparent;
+	background-color: transparent;
+	padding: 0.35rem 0.2rem;
+	box-shadow: none;
+}
+
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-clear:hover,
+.munipb-directory .munipb-toolbar button.munipb-tool.munipb-clear:active {
+	background-color: transparent;
+	color: var(--munipb-toolbar);
+	text-decoration: underline;
+	text-underline-offset: 0.15em;
+}
+
+.munipb-directory .munipb-toolbar button.munipb-tool:focus:not(:focus-visible),
+.munipb-directory .munipb-search button.munipb-search-clear:focus:not(:focus-visible),
+.munipb-directory .munipb-search button.munipb-search-submit:focus:not(:focus-visible) {
+	outline: none;
+	box-shadow: none;
+}
+
+.munipb-directory .munipb-toolbar button.munipb-tool:focus-visible,
+.munipb-directory .munipb-search button.munipb-search-clear:focus-visible,
+.munipb-directory .munipb-search button.munipb-search-submit:focus-visible {
+	outline: 2px solid var(--munipb-toolbar);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px #fff;
+	border-color: var(--munipb-toolbar);
+	background-color: transparent;
+	color: var(--munipb-toolbar);
+}
+
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]),
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):hover,
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):focus,
+.munipb-directory .munipb-search button.munipb-search-clear:not([hidden]):active {
+	width: 2rem;
+	min-width: 2rem;
+	height: 2rem;
+	min-height: 2rem;
+	padding: 0;
+	border-color: transparent;
+	background-color: var(--munipb-bg-soft);
+	color: var(--munipb-primary-dark);
+	font-size: 1.25rem;
+	font-weight: 400;
+	line-height: 1;
+}
+
+.munipb-directory .munipb-search button.munipb-search-submit,
+.munipb-directory .munipb-search button.munipb-search-submit:hover,
+.munipb-directory .munipb-search button.munipb-search-submit:focus,
+.munipb-directory .munipb-search button.munipb-search-submit:focus-visible,
+.munipb-directory .munipb-search button.munipb-search-submit:active {
+	background-color: var(--munipb-toolbar);
+	border-color: var(--munipb-toolbar);
+	color: #fff;
+}
+
+.munipb-directory.munipb-js .munipb-search button.munipb-search-submit {
+	display: none;
+}
+
+.munipb-directory .munipb-search input.munipb-search-input,
+.munipb-directory .munipb-search input.munipb-search-input:hover,
+.munipb-directory .munipb-search input.munipb-search-input:focus,
+.munipb-directory .munipb-search input.munipb-search-input:focus-visible,
+.munipb-directory .munipb-search input.munipb-search-input:active {
+	appearance: none;
+	-webkit-appearance: none;
+	box-sizing: border-box;
+	display: block;
+	flex: 1 1 auto;
+	width: auto;
+	min-width: 0;
+	max-width: 100%;
+	height: auto;
+	min-height: 2.75rem;
+	max-height: none;
+	margin: 0;
+	padding: 0.65rem 0.25rem;
+	float: none;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	background-color: transparent;
+	background-image: none;
+	color: var(--munipb-primary-dark);
+	box-shadow: none;
+	text-shadow: none;
+	filter: none;
+	opacity: 1;
+	transform: none;
+	font-family: inherit;
+	font-size: 1rem;
+	font-weight: 400;
+	font-style: normal;
+	line-height: 1.4;
+	letter-spacing: normal;
+	text-transform: none;
+	text-decoration: none;
+	text-align: left;
+	text-indent: 0;
+	outline: none;
+}
+
+.munipb-directory .munipb-search input.munipb-search-input:focus-visible {
+	outline: 2px solid var(--munipb-toolbar);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px #fff;
+	background-color: transparent;
+	color: var(--munipb-primary-dark);
+}
+
+.munipb-directory .munipb-cats-panel label.munipb-cats-label,
+.munipb-directory .munipb-cats-panel label.munipb-cats-label:hover,
+.munipb-directory .munipb-cats-panel label.munipb-cats-label:focus,
+.munipb-directory .munipb-cats-panel label.munipb-cats-label:focus-visible,
+.munipb-directory .munipb-cats-panel label.munipb-cats-label:active {
+	display: flex;
+	align-items: flex-start;
+	width: auto;
+	min-height: 0;
+	margin: 0;
+	padding: 0.4rem 0.9rem 0.4rem calc(0.9rem + (var(--munipb-depth, 0) * 0.9rem));
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	background-color: transparent;
+	background-image: none;
+	color: var(--munipb-primary-dark);
+	box-shadow: none;
+	text-shadow: none;
+	font-family: inherit;
+	font-size: 0.875rem;
+	font-weight: 400;
+	font-style: normal;
+	line-height: 1.35;
+	letter-spacing: normal;
+	text-transform: none;
+	text-decoration: none;
+	text-align: left;
+	cursor: pointer;
+}
+
+.munipb-directory .munipb-cats-panel label.munipb-cats-label:hover {
+	background-color: #eef2fb;
+}
+
+.munipb-directory .munipb-cats-panel input[type="checkbox"],
+.munipb-directory .munipb-cats-panel input[type="checkbox"]:hover,
+.munipb-directory .munipb-cats-panel input[type="checkbox"]:focus,
+.munipb-directory .munipb-cats-panel input[type="checkbox"]:active {
+	appearance: auto;
+	-webkit-appearance: checkbox;
+	box-sizing: border-box;
+	display: inline-block;
+	flex: 0 0 auto;
+	width: 1rem;
+	min-width: 1rem;
+	max-width: 1rem;
+	height: 1rem;
+	min-height: 1rem;
+	max-height: 1rem;
+	margin: 0.15rem 0 0;
+	padding: 0;
+	float: none;
+	border: 1px solid var(--munipb-toolbar);
+	border-radius: 3px;
+	background-color: #fff;
+	background-image: none;
+	color: var(--munipb-toolbar);
+	accent-color: var(--munipb-toolbar);
+	box-shadow: none;
+	text-shadow: none;
+	font-family: inherit;
+	font-size: 1rem;
+	font-weight: 400;
+	line-height: 1;
+	letter-spacing: normal;
+	text-transform: none;
+	opacity: 1;
+	transform: none;
+	cursor: pointer;
+	vertical-align: middle;
+}
+
+.munipb-directory .munipb-cats-panel input[type="checkbox"]:focus:not(:focus-visible) {
+	outline: none;
+	box-shadow: none;
+}
+
+.munipb-directory .munipb-cats-panel input[type="checkbox"]:focus-visible {
+	outline: 2px solid var(--munipb-toolbar);
+	outline-offset: 2px;
+	box-shadow: 0 0 0 4px #fff;
+	border-color: var(--munipb-toolbar);
+	background-color: #fff;
+	accent-color: var(--munipb-toolbar);
+}
+
+/*
+ * Table rows vs theme resets.
+ * Hello Elementor paints `table tbody > tr:nth-child(odd) > td` grey (0,1,4)
+ * and greys every row on hover. These selectors are (0,4,3) or higher.
+ * Without JS, :nth-child is the fallback. With JS, munipb-row-odd/even follow
+ * only the contact rows still on screen, once per department.
+ */
+.munipb-directory .munipb-content .munipb-table thead tr > th,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row > td,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row > td,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
+	border: 0;
+	border-bottom: 1px solid var(--munipb-border);
+	background-image: none;
+}
+
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-entry-row > td {
+	color: #333;
+}
+
+.munipb-directory .munipb-content .munipb-table a.munipb-phone,
+.munipb-directory .munipb-content .munipb-table a.munipb-email,
+.munipb-directory .munipb-content .munipb-table a.munipb-phone:hover,
+.munipb-directory .munipb-content .munipb-table a.munipb-email:hover,
+.munipb-directory .munipb-content .munipb-table a.munipb-phone:focus,
+.munipb-directory .munipb-content .munipb-table a.munipb-email:focus {
+	color: var(--munipb-primary);
+}
+
+.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(odd),
+.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(odd) > td,
+.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(odd):hover,
+.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(odd):hover > td,
+.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-odd,
+.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-odd > td,
+.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-odd:hover,
+.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-odd:hover > td {
+	background-color: var(--munipb-row-odd);
+	background-image: none;
+}
+
+.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(even),
+.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(even) > td,
+.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(even):hover,
+.munipb-directory:not(.munipb-js) .munipb-table tbody tr.munipb-entry-row:nth-child(even):hover > td,
+.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-even,
+.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-even > td,
+.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-even:hover,
+.munipb-directory .munipb-table tbody tr.munipb-entry-row.munipb-row-even:hover > td {
+	background-color: var(--munipb-row-even);
+	background-image: none;
+}
+
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row > th,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row > td,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row:hover,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row:hover > th,
+.munipb-directory .munipb-content .munipb-table tbody tr.munipb-subdept-row:hover > td {
+	background-color: var(--munipb-sub-bg);
+	background-image: none;
+	color: var(--munipb-primary-dark);
+	border: 0;
+	border-bottom: 1px solid var(--munipb-border);
+}
+
+.munipb-directory.munipb-bp-always .munipb-content .munipb-table tbody tr.munipb-entry-row > td,
+.munipb-directory.munipb-bp-always .munipb-content .munipb-table tbody tr.munipb-subdept-row > td,
+.munipb-directory.munipb-bp-always .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
+	border: 0;
+}
+
+@container munipb (max-width: 480px) {
+
+	.munipb-directory.munipb-bp-480 .munipb-content .munipb-table tbody tr.munipb-entry-row > td,
+	.munipb-directory.munipb-bp-480 .munipb-content .munipb-table tbody tr.munipb-subdept-row > td,
+	.munipb-directory.munipb-bp-480 .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
+		border: 0;
+	}
+}
+
+@container munipb (max-width: 720px) {
+
+	.munipb-directory.munipb-bp-720 .munipb-content .munipb-table tbody tr.munipb-entry-row > td,
+	.munipb-directory.munipb-bp-720 .munipb-content .munipb-table tbody tr.munipb-subdept-row > td,
+	.munipb-directory.munipb-bp-720 .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
+		border: 0;
+	}
+}
+
+@container munipb (max-width: 960px) {
+
+	.munipb-directory.munipb-bp-960 .munipb-content .munipb-table tbody tr.munipb-entry-row > td,
+	.munipb-directory.munipb-bp-960 .munipb-content .munipb-table tbody tr.munipb-subdept-row > td,
+	.munipb-directory.munipb-bp-960 .munipb-content .munipb-table tbody tr.munipb-subdept-row > th {
+		border: 0;
 	}
 }

@@ -140,7 +140,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 		$this->add_control(
 			'show_toc',
 			array(
-				'label'   => __( 'Show table of contents', 'municipal-phonebook' ),
+				'label'   => __( 'Show categories', 'municipal-phonebook' ),
 				'type'    => Controls_Manager::SWITCHER,
 				'default' => 'yes',
 			)
@@ -204,6 +204,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 			'soft_bg'      => array( __( 'Soft background', 'municipal-phonebook' ), '--munipb-bg-soft' ),
 			'sub_bg'       => array( __( 'Sub-department background', 'municipal-phonebook' ), '--munipb-sub-bg' ),
 			'flash'        => array( __( 'Highlight', 'municipal-phonebook' ), '--munipb-flash' ),
+			'toolbar'      => array( __( 'Toolbar', 'municipal-phonebook' ), '--munipb-toolbar' ),
 		);
 		foreach ( $vars as $id => $def ) {
 			$this->color( 'color_' . $id, $def[0], array( '{{WRAPPER}} .munipb-directory' => $def[1] . ': {{VALUE}};' ) );
@@ -307,7 +308,26 @@ class Munipb_Elementor_Widget extends Widget_Base {
 			)
 		);
 		$this->color( 'cell_color', __( 'Row text color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-table td' => 'color: {{VALUE}};' ) );
-		$this->color( 'row_bg', __( 'Row / card background', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-entry-row, {{WRAPPER}} .munipb-entry-row td' => 'background-color: {{VALUE}};' ) );
+		$row_cell = '{{WRAPPER}} .munipb-directory .munipb-table tbody tr.munipb-entry-row';
+		$this->color(
+			'row_bg',
+			__( 'Row / card background', 'municipal-phonebook' ),
+			array(
+				implode(
+					', ',
+					array(
+						$row_cell . '.munipb-row-odd > td',
+						$row_cell . '.munipb-row-even > td',
+						$row_cell . '.munipb-row-odd:hover > td',
+						$row_cell . '.munipb-row-even:hover > td',
+						$row_cell . ':nth-child(odd) > td',
+						$row_cell . ':nth-child(even) > td',
+					)
+				) => 'background-color: {{VALUE}};',
+			)
+		);
+		$this->color( 'row_odd', __( 'Odd row color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory' => '--munipb-row-odd: {{VALUE}};' ) );
+		$this->color( 'row_even', __( 'Even row color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory' => '--munipb-row-even: {{VALUE}};' ) );
 		$this->color( 'subdept_color', __( 'Sub-department text color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-subdept-row th, {{WRAPPER}} .munipb-subdept-row td' => 'color: {{VALUE}};' ) );
 		$this->add_responsive_control(
 			'cell_padding',
@@ -369,18 +389,29 @@ class Munipb_Elementor_Widget extends Widget_Base {
 				'condition' => array( 'show_search' => 'yes' ),
 			)
 		);
+		$input        = '{{WRAPPER}} .munipb-directory .munipb-search input.munipb-search-input';
+		$input_states = implode(
+			', ',
+			array(
+				$input,
+				$input . ':hover',
+				$input . ':focus',
+				$input . ':focus-visible',
+				$input . ':active',
+			)
+		);
 		$this->add_group_control(
 			Group_Control_Typography::get_type(),
 			array(
 				'name'     => 'search_typography',
-				'selector' => '{{WRAPPER}} .munipb-search-input',
+				'selector' => $input_states,
 			)
 		);
-		$this->color( 'search_color', __( 'Text color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-search-input' => 'color: {{VALUE}};' ) );
-		$this->color( 'search_bg', __( 'Background', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-search-box' => 'background-color: {{VALUE}};' ) );
-		$this->color( 'search_border', __( 'Border color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-search-box' => 'border-color: {{VALUE}};' ) );
-		$this->color( 'search_border_focus', __( 'Focus border color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-search-box:focus-within' => 'border-color: {{VALUE}};' ) );
-		$this->color( 'search_icon', __( 'Icon color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-search-icon' => 'color: {{VALUE}};' ) );
+		$this->color( 'search_color', __( 'Text color', 'municipal-phonebook' ), array( $input_states => 'color: {{VALUE}};' ) );
+		$this->color( 'search_bg', __( 'Background', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-box' => 'background-color: {{VALUE}};' ) );
+		$this->color( 'search_border', __( 'Border color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-box' => 'border-color: {{VALUE}};' ) );
+		$this->color( 'search_border_focus', __( 'Focus border color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-box:focus-within' => 'border-color: {{VALUE}};' ) );
+		$this->color( 'search_icon', __( 'Icon color', 'municipal-phonebook' ), array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-icon' => 'color: {{VALUE}};' ) );
 		$this->add_responsive_control(
 			'search_radius',
 			array(
@@ -393,7 +424,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 						'max' => 60,
 					),
 				),
-				'selectors'  => array( '{{WRAPPER}} .munipb-search-box' => 'border-radius: {{SIZE}}{{UNIT}};' ),
+				'selectors'  => array( '{{WRAPPER}} .munipb-directory .munipb-search .munipb-search-box' => 'border-radius: {{SIZE}}{{UNIT}};' ),
 			)
 		);
 		$this->add_responsive_control(
@@ -408,7 +439,7 @@ class Munipb_Elementor_Widget extends Widget_Base {
 						'max' => 1200,
 					),
 				),
-				'selectors'  => array( '{{WRAPPER}} .munipb-search' => 'max-width: {{SIZE}}{{UNIT}};' ),
+				'selectors'  => array( '{{WRAPPER}} .munipb-directory .munipb-search' => 'max-width: {{SIZE}}{{UNIT}};' ),
 			)
 		);
 		$this->end_controls_section();

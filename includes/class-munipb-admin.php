@@ -41,6 +41,7 @@ class Munipb_Admin {
 
 		add_action( 'admin_menu', array( __CLASS__, 'menu' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
+		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue_settings' ) );
 		add_filter( 'plugin_action_links_' . plugin_basename( MUNIPB_FILE ), array( __CLASS__, 'action_links' ) );
 	}
 
@@ -390,16 +391,39 @@ class Munipb_Admin {
 	}
 
 	/**
-	 * Sanitize settings: only known keys, cast to 0/1.
+	 * Color picker assets, only on this settings screen.
+	 *
+	 * @param string $hook Current admin page hook.
+	 * @return void
+	 */
+	public static function enqueue_settings( $hook ) {
+		if ( 'munipb_entry_page_munipb-settings' !== $hook ) {
+			return;
+		}
+		wp_enqueue_style( 'wp-color-picker' );
+		wp_enqueue_script( 'wp-color-picker' );
+		wp_add_inline_script(
+			'wp-color-picker',
+			'jQuery( function ( $ ) { $( ".munipb-color-picker" ).wpColorPicker(); } );'
+		);
+	}
+
+	/**
+	 * Sanitize settings: known booleans as 0/1, row colors as hex.
 	 *
 	 * @param mixed $input Raw input.
-	 * @return array<string, int>
+	 * @return array<string, mixed>
 	 */
 	public static function sanitize_settings( $input ) {
-		$input = is_array( $input ) ? $input : array();
-		$out   = array();
-		foreach ( array_keys( munipb_default_settings() ) as $key ) {
+		$input    = is_array( $input ) ? $input : array();
+		$defaults = munipb_default_settings();
+		$out      = array();
+		foreach ( array( 'enable_rest', 'track_calls', 'delete_on_remove' ) as $key ) {
 			$out[ $key ] = empty( $input[ $key ] ) ? 0 : 1;
+		}
+		foreach ( array( 'row_odd', 'row_even' ) as $key ) {
+			$color       = munipb_sanitize_hex( isset( $input[ $key ] ) ? $input[ $key ] : '' );
+			$out[ $key ] = '' !== $color ? $color : $defaults[ $key ];
 		}
 		munipb_flush_cache();
 		return $out;
@@ -440,12 +464,26 @@ class Munipb_Admin {
 							</td>
 						</tr>
 					<?php endforeach; ?>
+					<tr>
+						<th scope="row"><label for="munipb-row-odd"><?php esc_html_e( 'Odd row color', 'municipal-phonebook' ); ?></label></th>
+						<td>
+							<input type="text" class="munipb-color-picker" id="munipb-row-odd" name="munipb_settings[row_odd]" value="<?php echo esc_attr( (string) $s['row_odd'] ); ?>" data-default-color="#ffffff">
+							<p class="description"><?php esc_html_e( 'Background of the 1st, 3rd, 5th… visible contact row in each department.', 'municipal-phonebook' ); ?></p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row"><label for="munipb-row-even"><?php esc_html_e( 'Even row color', 'municipal-phonebook' ); ?></label></th>
+						<td>
+							<input type="text" class="munipb-color-picker" id="munipb-row-even" name="munipb_settings[row_even]" value="<?php echo esc_attr( (string) $s['row_even'] ); ?>" data-default-color="#ffffff">
+							<p class="description"><?php esc_html_e( 'Background of the 2nd, 4th, 6th… visible contact row in each department.', 'municipal-phonebook' ); ?></p>
+						</td>
+					</tr>
 				</table>
 				<?php submit_button(); ?>
 			</form>
 			<h2><?php esc_html_e( 'Usage', 'municipal-phonebook' ); ?></h2>
 			<p><?php esc_html_e( 'Shortcode (works in the Elementor "Shortcode" widget and in WoodMart/HTML blocks):', 'municipal-phonebook' ); ?></p>
-			<p><code>[municipal_phonebook]</code> &nbsp; <code>[municipal_phonebook search="0" toc="0" departments="slug-1,slug-2" breakpoint="720"]</code></p>
+			<p><code>[municipal_phonebook]</code> &nbsp; <code>[municipal_phonebook search="0" toc="0" departments="slug-1,slug-2" breakpoint="720" row_odd="#ffffff" row_even="#ffffff"]</code></p>
 			<p><?php esc_html_e( 'Elementor: add the "Municipal Phonebook" widget from the "Municipal Phonebook" category.', 'municipal-phonebook' ); ?></p>
 			<p><?php esc_html_e( 'Block editor: add the "Municipal Phonebook" block.', 'municipal-phonebook' ); ?></p>
 		</div>
