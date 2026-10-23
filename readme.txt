@@ -4,7 +4,7 @@ Tags: phonebook, directory, contacts, municipality, greek
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.4.2
+Stable tag: 1.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -58,7 +58,15 @@ One line per group, numbers in the same group separated by `|`. In CSV use `;` b
 
 = What is the CSV format? =
 
-Header: `department,subdepartment,name,role,phones,email,order`. A row with a sub-department and an empty name sets the sub-department's own phones/email.
+Header: `department,subdepartment,name,role,phones,email,order`, plus one column for each custom column slug. A row with a sub-department and an empty name sets the sub-department's own phones/email. A file column cell is an attachment ID or the file URL.
+
+= Can each department have different columns? =
+
+Yes. Phonebook → Settings → Columns sets the columns for every department. On a department you can keep that list or choose another order. A child department uses its parent's columns unless you choose its own. File columns use the media library and are shown as a download link.
+
+= How do sub-departments appear? =
+
+By default a child department is a row inside the parent table. Phonebook → Settings can switch back to the previous row, which shows that department's own phones and email. Each department can override the choice.
 
 = Is the internal note public? =
 
@@ -73,6 +81,13 @@ Options and caches are always removed. Contacts and departments are removed only
 Yes. Phonebook → Settings → Custom CSS applies to every directory, and only on pages that show one. The Elementor widget has its own Custom CSS field on the Advanced tab: the word `selector` means that widget's directory (`.munipb-directory`). CSS with HTML, a style tag, unbalanced braces, or an unclosed comment is rejected.
 
 == Changelog ==
+
+= 1.5.0 =
+* Child departments can be a sub-header row inside the parent table. The sub-header color is configurable in Settings and in the Elementor widget. Search hides a sub-header when none of its contacts match, and row stripes start again after each sub-header.
+* Settings → Columns defines the directory columns. Built-in columns can be reordered or hidden. Custom columns can be text, phone, email, a link, or a file.
+* Each department can use the global columns or its own set. A child department inherits its parent unless it has its own set.
+* A file column stores a media library attachment. The public page shows a download link with the contact's name.
+* Visible text, phone, email and link columns are included in the directory search. The REST search includes text columns. CSV import and export use the column slug. A file cell is an attachment ID or URL, and the REST response exposes the file URL.
 
 = 1.4.2 =
 * Update checks stay cached for 3 hours. A failed lookup is cached for 1 hour.

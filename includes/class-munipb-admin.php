@@ -105,6 +105,7 @@ class Munipb_Admin {
 				</td>
 			</tr>
 		</table>
+		<?php Munipb_Columns_Admin::render_entry_fields( $post->ID ); ?>
 		<p class="description"><?php esc_html_e( 'Choose the department in the "Departments" box and set the display order in "Page Attributes → Order".', 'municipal-phonebook' ); ?></p>
 		<?php
 	}
@@ -136,6 +137,7 @@ class Munipb_Admin {
 		self::update_or_delete( $post_id, '_munipb_email', is_email( $email ) ? $email : '' );
 		self::update_or_delete( $post_id, '_munipb_phones', $phones );
 		self::update_or_delete( $post_id, '_munipb_private_note', $note );
+		Munipb_Columns_Admin::save_entry( $post_id );
 	}
 
 	/**
@@ -207,6 +209,9 @@ class Munipb_Admin {
 			<label for="munipb_email"><?php esc_html_e( 'Department email', 'municipal-phonebook' ); ?></label>
 			<?php echo $f['email']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in term_field_html(). ?>
 		</div>
+		<div class="form-field">
+			<?php Munipb_Columns_Admin::render_term_fields( 0 ); ?>
+		</div>
 		<?php
 	}
 
@@ -235,6 +240,10 @@ class Munipb_Admin {
 			<th scope="row"><label for="munipb_email"><?php esc_html_e( 'Department email', 'municipal-phonebook' ); ?></label></th>
 			<td><?php echo $f['email']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- escaped in term_field_html(). ?></td>
 		</tr>
+		<tr class="form-field">
+			<th scope="row"><?php esc_html_e( 'Columns', 'municipal-phonebook' ); ?></th>
+			<td><?php Munipb_Columns_Admin::render_term_fields( $term->term_id ); ?></td>
+		</tr>
 		<?php
 	}
 
@@ -259,6 +268,7 @@ class Munipb_Admin {
 		update_term_meta( $term_id, 'munipb_order', min( $order, 9999 ) );
 		update_term_meta( $term_id, 'munipb_phones', $phones );
 		update_term_meta( $term_id, 'munipb_email', is_email( $email ) ? $email : '' );
+		Munipb_Columns_Admin::save_term( $term_id );
 		munipb_flush_cache();
 	}
 
@@ -493,9 +503,10 @@ class Munipb_Admin {
 						<th scope="row"><label for="munipb-row-even"><?php esc_html_e( 'Even row color', 'municipal-phonebook' ); ?></label></th>
 						<td>
 							<input type="text" class="munipb-color-picker" id="munipb-row-even" name="munipb_settings[row_even]" value="<?php echo esc_attr( (string) $s['row_even'] ); ?>" data-default-color="#f3f6fc">
-							<p class="description"><?php esc_html_e( 'Background of the 2nd, 4th, 6th… visible contact row in each department.', 'municipal-phonebook' ); ?></p>
+							<p class="description"><?php esc_html_e( 'Background of the 2nd, 4th, 6th… visible contact row. Stripes start again after each sub-department row.', 'municipal-phonebook' ); ?></p>
 						</td>
 					</tr>
+					<?php Munipb_Columns_Admin::render_settings( $s ); ?>
 				</table>
 				<h2><?php esc_html_e( 'Custom CSS', 'municipal-phonebook' ); ?></h2>
 				<p class="description"><?php esc_html_e( 'This CSS is added only on pages that show the directory. Invalid CSS is rejected and the previous value is kept.', 'municipal-phonebook' ); ?></p>
