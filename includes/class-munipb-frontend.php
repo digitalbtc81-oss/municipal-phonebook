@@ -334,17 +334,20 @@ class Munipb_Frontend {
 	 * Normalize attributes from any source (shortcode, block, Elementor, REST).
 	 *
 	 * @param array $atts Raw attributes.
-	 * @return array{search:bool, toc:bool, slugs:string[], breakpoint:string, row_odd:string, row_even:string}
+	 * @return array{search:bool, toc:bool, slugs:string[], department_ids:int[], departments_filtered:bool, breakpoint:string, row_odd:string, row_even:string}
 	 */
 	public static function normalize_atts( $atts ) {
-		$atts = is_array( $atts ) ? $atts : array();
+		$atts      = is_array( $atts ) ? $atts : array();
+		$selection = munipb_parse_department_selection( isset( $atts['departments'] ) ? $atts['departments'] : '' );
 		return array(
-			'search'     => self::truthy( isset( $atts['search'] ) ? $atts['search'] : '1' ),
-			'toc'        => self::truthy( isset( $atts['toc'] ) ? $atts['toc'] : '1' ),
-			'slugs'      => munipb_parse_department_slugs( isset( $atts['departments'] ) ? $atts['departments'] : '' ),
-			'breakpoint' => self::sanitize_breakpoint( isset( $atts['breakpoint'] ) ? $atts['breakpoint'] : '720' ),
-			'row_odd'    => munipb_sanitize_hex( isset( $atts['row_odd'] ) ? $atts['row_odd'] : '' ),
-			'row_even'   => munipb_sanitize_hex( isset( $atts['row_even'] ) ? $atts['row_even'] : '' ),
+			'search'               => self::truthy( isset( $atts['search'] ) ? $atts['search'] : '1' ),
+			'toc'                  => self::truthy( isset( $atts['toc'] ) ? $atts['toc'] : '1' ),
+			'slugs'                => $selection['slugs'],
+			'department_ids'       => $selection['ids'],
+			'departments_filtered' => $selection['active'],
+			'breakpoint'           => self::sanitize_breakpoint( isset( $atts['breakpoint'] ) ? $atts['breakpoint'] : '720' ),
+			'row_odd'              => munipb_sanitize_hex( isset( $atts['row_odd'] ) ? $atts['row_odd'] : '' ),
+			'row_even'             => munipb_sanitize_hex( isset( $atts['row_even'] ) ? $atts['row_even'] : '' ),
 		);
 	}
 
@@ -411,7 +414,10 @@ class Munipb_Frontend {
 		++self::$instance;
 		$inst = self::$instance;
 		$opts = self::normalize_atts( $raw_atts );
-		$tree = munipb_get_directory( $opts['slugs'] );
+		$tree = munipb_get_directory();
+		if ( ! empty( $opts['departments_filtered'] ) ) {
+			$tree = munipb_filter_directory( $tree, $opts['department_ids'] );
+		}
 
 		// Optional no-JS fallback: ?munipb_q=... filters server side. Read-only, public data, so no nonce needed.
 		$query = '';

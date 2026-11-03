@@ -683,31 +683,347 @@ function munipb_get_directory( $only_slugs = array() ) {
 }
 
 /**
- * Parse and validate a comma separated list of department slugs.
+ * Compare key for a department slug.
  *
- * Unknown slugs are dropped, so the result only ever contains real top-level slugs.
+ * Both sides are decoded, lowercased, and percent-encoded again. This matches
+ * a stored Greek slug (%ce%b4…) whether the caller passed that slug, the same
+ * slug with uppercase hex, or the Greek text. It does not run sanitize_title,
+ * so a transliteration plugin cannot turn the slug into a different string.
+ *
+ * @param mixed $value Raw slug or label.
+ * @return string
+ */
+function munipb_slug_key( $value ) {
+	$value = trim( is_scalar( $value ) ? (string) $value : '' );
+	if ( '' === $value ) {
+		return '';
+	}
+	$decoded = rawurldecode( $value );
+	if ( function_exists( 'mb_strtolower' ) ) {
+		$decoded = mb_strtolower( $decoded, 'UTF-8' );
+	} else {
+		$decoded = strtolower( $decoded );
+	}
+	return strtolower( rawurlencode( $decoded ) );
+}
+
+/**
+ * Index every department, including children, by id and by normalized slug.
+ *
+ * @return array{by_id:array<int, array{id:int, slug:string}>, by_key:array<string, int>}
+ */
+function munipb_department_index() {
+	$by_id  = array();
+	$by_key = array();
+
+	$add = static function ( $id, $slug ) use ( &$by_id, &$by_key ) {
+		$id   = (int) $id;
+		$slug = (string) $slug;
+		if ( $id < 1 || isset( $by_id[ $id ] ) ) {
+			return;
+		}
+		$by_id[ $id ] = array(
+			'id'   => $id,
+			'slug' => $slug,
+		);
+		$key          = munipb_slug_key( $slug );
+		if ( '' !== $key && ! isset( $by_key[ $key ] ) ) {
+			$by_key[ $key ] = $id;
+		}
+		$plain = strtolower( $slug );
+		if ( '' !== $plain && ! isset( $by_key[ $plain ] ) ) {
+			$by_key[ $plain ] = $id;
+		}
+	};
+
+	foreach ( munipb_get_directory() as $section ) {
+		$add( $section['id'], isset( $section['slug'] ) ? $section['slug'] : '' );
+		if ( empty( $section['children'] ) || ! is_array( $section['children'] ) ) {
+			continue;
+		}
+		foreach ( $section['children'] as $child ) {
+			$add( isset( $child['id'] ) ? $child['id'] : 0, isset( $child['slug'] ) ? $child['slug'] : '' );
+		}
+	}
+
+	return array(
+		'by_id'  => $by_id,
+		'by_key' => $by_key,
+	);
+}
+
+/**
+ * Split a departments attribute into at most 100 tokens.
+ *
+ * @param string|array $raw Raw list.
+ * @return string[]
+ */
+function munipb_department_tokens( $raw ) {
+	if ( is_array( $raw ) ) {
+		$parts = array();
+		foreach ( $raw as $item ) {
+			if ( is_scalar( $item ) ) {
+				$parts[] = (string) $item;
+			}
+		}
+		$raw = implode( ',', $parts );
+	}
+	$raw    = substr( trim( (string) $raw ), 0, 2000 );
+	$tokens = array();
+	if ( '' === $raw ) {
+		return $tokens;
+	}
+	foreach ( array_slice( explode( ',', $raw ), 0, 100 ) as $token ) {
+		$token = trim( $token );
+		if ( '' !== $token ) {
+			$tokens[] = $token;
+		}
+	}
+	return $tokens;
+}
+
+/**
+ * Resolve one token to a department id.
+ *
+ * A slug match wins over a numeric term id, so a slug that happens to be
+ * digits is kept. Term ids are accepted for the Elementor control.
+ *
+ * @param string $token Token.
+ * @param array  $index Department index from munipb_department_index().
+ * @return int
+ */
+function munipb_match_department_token( $token, $index ) {
+	$key = munipb_slug_key( $token );
+	if ( '' !== $key && isset( $index['by_key'][ $key ] ) ) {
+		return (int) $index['by_key'][ $key ];
+	}
+	$plain = strtolower( trim( (string) $token ) );
+	if ( '' !== $plain && isset( $index['by_key'][ $plain ] ) ) {
+		return (int) $index['by_key'][ $plain ];
+	}
+	if ( 1 === preg_match( '/^[0-9]+$/', trim( (string) $token ) ) ) {
+		$id = (int) $token;
+		if ( $id > 0 && isset( $index['by_id'][ $id ] ) ) {
+			return $id;
+		}
+	}
+	return 0;
+}
+
+/**
+ * Resolve a departments attribute.
+ *
+ * `active` is false only when the caller asked for every department. A
+ * non-empty request that matches nothing stays active with an empty id list,
+ * so the directory does not fall back to showing everything.
+ *
+ * @param string|array $raw Slugs, Greek names, or term ids.
+ * @return array{active:bool, ids:int[], slugs:string[]}
+ */
+function munipb_parse_department_selection( $raw ) {
+	$tokens = munipb_department_tokens( $raw );
+	if ( ! $tokens ) {
+		return array(
+			'active' => false,
+			'ids'    => array(),
+			'slugs'  => array(),
+		);
+	}
+
+	$index = munipb_department_index();
+	$ids   = array();
+	$slugs = array();
+	foreach ( $tokens as $token ) {
+		$id = munipb_match_department_token( $token, $index );
+		if ( $id < 1 || isset( $ids[ $id ] ) ) {
+			continue;
+		}
+		$ids[ $id ] = true;
+		$slugs[]    = $index['by_id'][ $id ]['slug'];
+	}
+
+	return array(
+		'active' => true,
+		'ids'    => array_map( 'intval', array_keys( $ids ) ),
+		'slugs'  => $slugs,
+	);
+}
+
+/**
+ * Parse and validate a comma separated list of departments.
+ *
+ * Each token may be a stored slug, the department name, or a term id. Unknown
+ * tokens are dropped. Child departments are included. The returned slugs are
+ * the values stored on the terms, not a fresh sanitize_title() pass.
  *
  * @param string|array $raw Raw list.
  * @return string[]
  */
 function munipb_parse_department_slugs( $raw ) {
-	if ( is_array( $raw ) ) {
-		$raw = implode( ',', array_map( 'strval', $raw ) );
+	$selection = munipb_parse_department_selection( $raw );
+	return $selection['slugs'];
+}
+
+/**
+ * Departments the Elementor control can offer.
+ *
+ * The option value is the term id. Saved widgets that still store a slug keep
+ * working because munipb_parse_department_selection() accepts both.
+ *
+ * @return array<int, array{id:int, slug:string, label:string}>
+ */
+function munipb_department_choices() {
+	$choices = array();
+	foreach ( munipb_get_directory() as $section ) {
+		$section_id   = (int) $section['id'];
+		$section_name = isset( $section['name'] ) ? (string) $section['name'] : '';
+		$choices[]    = array(
+			'id'    => $section_id,
+			'slug'  => isset( $section['slug'] ) ? (string) $section['slug'] : '',
+			'label' => $section_name,
+		);
+		if ( empty( $section['children'] ) || ! is_array( $section['children'] ) ) {
+			continue;
+		}
+		$names = array( $section_id => $section_name );
+		foreach ( $section['children'] as $child ) {
+			$child_id           = isset( $child['id'] ) ? (int) $child['id'] : 0;
+			$names[ $child_id ] = isset( $child['name'] ) ? (string) $child['name'] : '';
+		}
+		foreach ( $section['children'] as $child ) {
+			$child_id = isset( $child['id'] ) ? (int) $child['id'] : 0;
+			if ( $child_id < 1 ) {
+				continue;
+			}
+			$parent_id = isset( $child['parent'] ) ? (int) $child['parent'] : $section_id;
+			$parent    = isset( $names[ $parent_id ] ) ? $names[ $parent_id ] : $section_name;
+			$choices[] = array(
+				'id'    => $child_id,
+				'slug'  => isset( $child['slug'] ) ? (string) $child['slug'] : '',
+				'label' => $parent . ' — ' . $names[ $child_id ],
+			);
+		}
 	}
-	$raw = substr( (string) $raw, 0, 2000 );
-	if ( '' === trim( $raw ) ) {
+	return $choices;
+}
+
+/**
+ * Keep only the selected departments.
+ *
+ * A selected top-level department keeps its whole table. A selected child
+ * keeps that child (and its descendants) inside the parent table, which is
+ * how an inline sub-department is shown. An empty id list shows nothing.
+ *
+ * @param array $tree Full directory tree.
+ * @param int[] $ids  Term ids.
+ * @return array<int, array<string, mixed>>
+ */
+function munipb_filter_directory( $tree, $ids ) {
+	$wanted = array();
+	foreach ( (array) $ids as $id ) {
+		$id = (int) $id;
+		if ( $id > 0 ) {
+			$wanted[ $id ] = true;
+		}
+	}
+	if ( ! $wanted ) {
 		return array();
 	}
 
-	$known = wp_list_pluck( munipb_get_directory(), 'slug' );
-	$out   = array();
-	foreach ( array_slice( explode( ',', $raw ), 0, 100 ) as $slug ) {
-		$slug = sanitize_title( rawurldecode( trim( $slug ) ) );
-		if ( '' !== $slug && in_array( $slug, $known, true ) && ! in_array( $slug, $out, true ) ) {
-			$out[] = $slug;
+	$out = array();
+	foreach ( (array) $tree as $section ) {
+		if ( ! is_array( $section ) ) {
+			continue;
+		}
+		$section_id = isset( $section['id'] ) ? (int) $section['id'] : 0;
+		if ( isset( $wanted[ $section_id ] ) ) {
+			$out[] = $section;
+			continue;
+		}
+		$children = ( isset( $section['children'] ) && is_array( $section['children'] ) ) ? $section['children'] : array();
+		$parents  = array( $section_id => 0 );
+		foreach ( $children as $child ) {
+			if ( ! is_array( $child ) ) {
+				continue;
+			}
+			$child_id             = isset( $child['id'] ) ? (int) $child['id'] : 0;
+			$parents[ $child_id ] = isset( $child['parent'] ) ? (int) $child['parent'] : $section_id;
+		}
+		$keep = array();
+		foreach ( $children as $child ) {
+			if ( ! is_array( $child ) ) {
+				continue;
+			}
+			$child_id = isset( $child['id'] ) ? (int) $child['id'] : 0;
+			$direct   = munipb_department_selected( $child_id, $wanted, $parents, $section_id );
+			$context  = munipb_department_ancestor_selected( $child_id, $wanted, $parents );
+			if ( ! $direct && ! $context ) {
+				continue;
+			}
+			if ( ! $direct ) {
+				$child['entries'] = array();
+			}
+			$keep[] = $child;
+		}
+		if ( $keep ) {
+			$section['entries']  = array();
+			$section['children'] = $keep;
+			$out[]               = $section;
 		}
 	}
 	return $out;
+}
+
+/**
+ * Whether this department, or one of its ancestors below the section, is selected.
+ *
+ * @param int   $id         Term id.
+ * @param array $wanted     Selected ids.
+ * @param array $parents    Child id => parent id.
+ * @param int   $section_id Top-level id, which is not itself a match here.
+ * @return bool
+ */
+function munipb_department_selected( $id, $wanted, $parents, $section_id ) {
+	$guard   = 0;
+	$current = (int) $id;
+	while ( $current > 0 && $guard < 8 ) {
+		if ( isset( $wanted[ $current ] ) ) {
+			return true;
+		}
+		if ( $current === (int) $section_id ) {
+			return false;
+		}
+		$current = isset( $parents[ $current ] ) ? (int) $parents[ $current ] : 0;
+		++$guard;
+	}
+	return false;
+}
+
+/**
+ * Whether this department is an ancestor of a selected department.
+ *
+ * The row stays so an inline child is still shown under its parent band.
+ * The caller clears the ancestor's own entries.
+ *
+ * @param int   $id      Term id.
+ * @param array $wanted  Selected ids.
+ * @param array $parents Child id => parent id.
+ * @return bool
+ */
+function munipb_department_ancestor_selected( $id, $wanted, $parents ) {
+	$id = (int) $id;
+	foreach ( array_keys( $wanted ) as $wanted_id ) {
+		$guard   = 0;
+		$current = isset( $parents[ (int) $wanted_id ] ) ? (int) $parents[ (int) $wanted_id ] : 0;
+		while ( $current > 0 && $guard < 8 ) {
+			if ( $current === $id ) {
+				return true;
+			}
+			$current = isset( $parents[ $current ] ) ? (int) $parents[ $current ] : 0;
+			++$guard;
+		}
+	}
+	return false;
 }
 
 /**
@@ -793,6 +1109,7 @@ function munipb_collect_children( $parent_id, &$out, $depth ) {
 			'id'      => (int) $child->term_id,
 			'slug'    => $child->slug,
 			'name'    => $child->name,
+			'parent'  => (int) $parent_id,
 			'depth'   => $depth,
 			'phones'  => munipb_parse_phone_groups( get_term_meta( $child->term_id, 'munipb_phones', true ) ),
 			'email'   => sanitize_email( (string) get_term_meta( $child->term_id, 'munipb_email', true ) ),

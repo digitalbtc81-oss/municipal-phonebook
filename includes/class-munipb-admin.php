@@ -520,6 +520,7 @@ class Munipb_Admin {
 			<p><?php esc_html_e( 'Shortcode (works in the Elementor "Shortcode" widget and in WoodMart/HTML blocks):', 'municipal-phonebook' ); ?></p>
 			<p><code>[municipal_phonebook]</code> &nbsp; <code>[municipal_phonebook search="0" toc="0" departments="slug-1,slug-2" breakpoint="720" row_odd="#ffffff" row_even="#f3f6fc"]</code></p>
 			<p><?php esc_html_e( 'breakpoint also accepts a width in pixels (0–2400). 0 keeps the table.', 'municipal-phonebook' ); ?></p>
+			<p><?php esc_html_e( 'departments accepts a slug or a term ID, including a child department. An unknown value does not show every department.', 'municipal-phonebook' ); ?></p>
 			<p><?php esc_html_e( 'Elementor: add the "Municipal Phonebook" widget from the "Municipal Phonebook" category.', 'municipal-phonebook' ); ?></p>
 			<p><?php esc_html_e( 'Block editor: add the "Municipal Phonebook" block.', 'municipal-phonebook' ); ?></p>
 		</div>

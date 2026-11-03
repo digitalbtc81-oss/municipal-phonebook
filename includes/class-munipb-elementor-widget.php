@@ -83,14 +83,17 @@ class Munipb_Elementor_Widget extends Widget_Base {
 	}
 
 	/**
-	 * Top-level departments for the select control.
+	 * Departments for the select control, including children.
+	 *
+	 * Values are term ids. A widget saved before 1.5.3 still stores slugs;
+	 * rendering accepts a slug or an id.
 	 *
 	 * @return array<string, string>
 	 */
 	private function department_options() {
 		$options = array();
-		foreach ( munipb_get_directory() as $section ) {
-			$options[ $section['slug'] ] = $section['name'];
+		foreach ( munipb_department_choices() as $choice ) {
+			$options[ (string) $choice['id'] ] = $choice['label'];
 		}
 		return $options;
 	}
@@ -532,8 +535,8 @@ class Munipb_Elementor_Widget extends Widget_Base {
 		$settings = is_array( $settings ) ? $settings : array();
 
 		$departments = array();
-		if ( ! empty( $settings['departments'] ) && is_array( $settings['departments'] ) ) {
-			$departments = array_map( 'strval', array_filter( $settings['departments'], 'is_scalar' ) );
+		if ( ! empty( $settings['departments'] ) ) {
+			$departments = $settings['departments'];
 		}
 
 		$breakpoint = isset( $settings['breakpoint'] ) ? sanitize_key( (string) $settings['breakpoint'] ) : '720';

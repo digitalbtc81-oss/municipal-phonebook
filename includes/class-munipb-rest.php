@@ -52,8 +52,10 @@ class Munipb_REST {
 						'type'              => 'string',
 						'default'           => '',
 						'sanitize_callback' => static function ( $value ) {
-							// Do not pass sanitize_title() directly: REST passes the request as 2nd arg (fallback).
-							return sanitize_title( (string) $value );
+							// Keep the raw slug or term id. sanitize_title() would transliterate Greek
+							// when a permalink plugin is active, and the value would never match.
+							$value = is_scalar( $value ) ? trim( (string) $value ) : '';
+							return substr( $value, 0, 200 );
 						},
 					),
 				),
@@ -93,10 +95,14 @@ class Munipb_REST {
 	 * @return WP_REST_Response
 	 */
 	public static function get_entries( $request ) {
-		$dept  = (string) $request->get_param( 'department' );
-		$words = array_filter( preg_split( '/\s+/u', munipb_normalize_text( (string) $request->get_param( 'search' ) ) ) );
-		$tree  = munipb_get_directory( $dept ? array( $dept ) : array() );
-		$out   = array();
+		$dept      = (string) $request->get_param( 'department' );
+		$words     = array_filter( preg_split( '/\s+/u', munipb_normalize_text( (string) $request->get_param( 'search' ) ) ) );
+		$selection = munipb_parse_department_selection( $dept );
+		$tree      = munipb_get_directory();
+		if ( $selection['active'] ) {
+			$tree = munipb_filter_directory( $tree, $selection['ids'] );
+		}
+		$out = array();
 
 		$push = static function ( $entry, $department, $sub, $columns ) use ( &$out, $words ) {
 			$columns = is_array( $columns ) ? $columns : array();
