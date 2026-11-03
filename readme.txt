@@ -4,7 +4,7 @@ Tags: phonebook, directory, contacts, municipality, greek
 Requires at least: 6.2
 Tested up to: 7.1
 Requires PHP: 7.4
-Stable tag: 1.5.2
+Stable tag: 1.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,7 +42,7 @@ Municipal Phonebook lets you publish an organisation's telephone directory (depa
 
 * `search="0"` hides the search button (default `1`).
 * `toc="0"` hides the Categories filter (default `1`).
-* `departments="slug-1,slug-2"` shows only these top-level departments.
+* `departments="slug-1,slug-2"` shows only these departments. A value may be the stored slug, the department name, or the term ID, and a child department is included on its own. Leave it empty to show every department. An unknown value shows none.
 * `breakpoint="720"` container width under which rows turn into cards: `never`, `480`, `720`, `960`, `always`, or any whole number of pixels from 0 to 2400. 0 is the same as `never`.
 * `row_odd="#ffffff"` and `row_even="#f3f6fc"` override the odd and even contact-row colors for this directory. Invalid values are ignored. The same colors can be set for every directory under Phonebook → Settings. Even rows default to a light tint so the stripes are visible before you pick colors.
 
@@ -81,6 +81,9 @@ Options and caches are always removed. Contacts and departments are removed only
 Yes. Phonebook → Settings → Custom CSS applies to every directory, and only on pages that show one. The Elementor widget has its own Custom CSS field on the Advanced tab: the word `selector` means that widget's directory (`.munipb-directory`). CSS with HTML, a style tag, unbalanced braces, or an unclosed comment is rejected.
 
 == Changelog ==
+
+= 1.5.3 =
+* Choosing departments in the Elementor widget is kept when the slug is percent-encoded Greek or a transliteration plugin changes `sanitize_title`. The shortcode, the block, and the REST `department` argument use the same match. A selection that matches nothing no longer shows every department. Term IDs are accepted, and a child department can be selected on its own.
 
 = 1.5.2 =
 * Elementor’s “Switch to cards below” control has a Custom option and a pixel field from 0 to 2400. 0 keeps the table. The shortcode and the block accept the same number in `breakpoint`. The 480, 720, 960, never and always choices are unchanged.
